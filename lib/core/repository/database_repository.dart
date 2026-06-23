@@ -1,0 +1,49 @@
+import '../models/models.dart';
+
+abstract class DatabaseRepository {
+  /// Fetches the profile of a user by their ID.
+  Future<UserModel> fetchUserProfile(String userId);
+
+  /// Creates a new user profile.
+  Future<void> createUserProfile(UserModel user);
+
+  /// Creates a new group.
+  Future<GroupModel> createGroup(String name, String creatorId);
+
+  /// Joins a group using an invite code.
+  Future<void> joinGroupWithCode(String inviteCode, String userId);
+
+  /// Fetches all members of a specific group.
+  Future<List<UserModel>> fetchGroupMembers(String groupId);
+
+  /// Streams all expenses for a specific group.
+  Stream<List<ExpenseModel>> streamExpenses(String groupId);
+
+  /// Streams all expense splits for a specific group.
+  Stream<List<ExpenseSplitModel>> streamSplits(String groupId);
+
+  /// Streams all settlements for a specific group.
+  Stream<List<SettlementModel>> streamSettlements(String groupId);
+
+  /// Creates an expense and its associated splits in a transaction.
+  Future<void> addExpense({
+    required String groupId,
+    required String description,
+    required double amount,
+    required String payerId,
+    required ExpenseCategory category,
+    required SplitType splitType,
+    required Map<String, double> userOwedAmounts, // Map of userId -> amount owed
+  });
+
+  /// Logs a settlement transaction (initially in 'pending' status).
+  Future<void> createSettlement({
+    required String groupId,
+    required String debtorId,
+    required String creditorId,
+    required double amount,
+  });
+
+  /// Marks a settlement as 'confirmed', which will resolve the debt in the DSA engine.
+  Future<void> confirmSettlement(String settlementId);
+}
