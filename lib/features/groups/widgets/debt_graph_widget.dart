@@ -48,50 +48,65 @@ class DebtGraphWidget extends StatelessWidget {
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 12),
-          SizedBox(
-            height: 280,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                if (groupState.members.isEmpty || activeEdges.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'Add expenses to visualize the debt graph.',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  );
-                }
-
-                final size = Size(constraints.maxWidth, constraints.maxHeight);
-                final positions = _nodePositions(size, groupState.members.length);
-                final nodeMap = <String, Offset>{};
-                for (var i = 0; i < groupState.members.length; i++) {
-                  nodeMap[groupState.members[i].id] = positions[i];
-                }
-
-                return Stack(
-                  children: [
-                    CustomPaint(
-                      size: size,
-                      painter: _DebtGraphPainter(
-                        edges: activeEdges,
-                        nodePositions: nodeMap,
-                        color: showSimplified ? AppColors.owedToYou : AppColors.owed,
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 800),
+            switchInCurve: Curves.easeInOut,
+            switchOutCurve: Curves.easeInOut,
+            transitionBuilder: (child, animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: ScaleTransition(
+                  scale: Tween<double>(begin: 0.98, end: 1).animate(animation),
+                  child: child,
+                ),
+              );
+            },
+            child: SizedBox(
+              key: ValueKey(showSimplified),
+              height: 280,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  if (groupState.members.isEmpty || activeEdges.isEmpty) {
+                    return Center(
+                      child: Text(
+                        'Add expenses to visualize the debt graph.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
-                    ),
-                    for (var i = 0; i < groupState.members.length; i++)
-                      Positioned(
-                        left: positions[i].dx - 24,
-                        top: positions[i].dy - 24,
-                        child: _GraphNode(
-                          label: _initials(groupState.members[i].name),
-                          name: groupState.members[i].name,
-                          color: i.isEven ? AppColors.primary : AppColors.secondary,
+                    );
+                  }
+
+                  final size = Size(constraints.maxWidth, constraints.maxHeight);
+                  final positions = _nodePositions(size, groupState.members.length);
+                  final nodeMap = <String, Offset>{};
+                  for (var i = 0; i < groupState.members.length; i++) {
+                    nodeMap[groupState.members[i].id] = positions[i];
+                  }
+
+                  return Stack(
+                    children: [
+                      CustomPaint(
+                        size: size,
+                        painter: _DebtGraphPainter(
+                          edges: activeEdges,
+                          nodePositions: nodeMap,
+                          color: showSimplified ? AppColors.owedToYou : AppColors.owed,
                         ),
                       ),
-                  ],
-                );
-              },
+                      for (var i = 0; i < groupState.members.length; i++)
+                        Positioned(
+                          left: positions[i].dx - 24,
+                          top: positions[i].dy - 24,
+                          child: _GraphNode(
+                            label: _initials(groupState.members[i].name),
+                            name: groupState.members[i].name,
+                            color: i.isEven ? AppColors.primary : AppColors.secondary,
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         ],
