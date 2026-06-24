@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/auth/profile_provider.dart';
 import '../../core/auth/profile_service.dart';
 import '../../core/models/user_model.dart';
 import '../../shared/widgets/app_button.dart';
@@ -70,6 +71,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         name: _nameController.text,
         upiId: _upiController.text,
       );
+      ref.invalidate(currentProfileProvider);
       if (mounted) context.go('/dashboard');
     } catch (e) {
       if (mounted) {

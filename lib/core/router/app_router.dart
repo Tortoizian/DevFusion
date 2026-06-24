@@ -1,27 +1,61 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../auth/auth_provider.dart';
+import '../auth/profile_provider.dart';
+import 'auth_redirect.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/profile_setup_screen.dart';
 import '../../features/auth/splash_screen.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 
-final GoRouter appRouter = GoRouter(
-  initialLocation: '/',
-  routes: [
-    GoRoute(
-      path: '/',
-      builder: (context, state) => const SplashScreen(),
-    ),
-    GoRoute(
-      path: '/login',
-      builder: (context, state) => const LoginScreen(),
-    ),
-    GoRoute(
-      path: '/profile-setup',
-      builder: (context, state) => const ProfileSetupScreen(),
-    ),
-    GoRoute(
-      path: '/dashboard',
-      builder: (context, state) => const DashboardScreen(),
-    ),
-  ],
-);
+class _RouterRefreshNotifier extends ChangeNotifier {
+  void refresh() => notifyListeners();
+}
+
+final _routerRefreshNotifierProvider = Provider<_RouterRefreshNotifier>((ref) {
+  final notifier = _RouterRefreshNotifier();
+
+  void refresh() => notifier.refresh();
+
+  ref.listen(authStateProvider, (_, __) => refresh(), fireImmediately: true);
+  ref.listen(sessionProvider, (_, __) => refresh(), fireImmediately: true);
+  ref.listen(currentProfileProvider, (_, __) => refresh(), fireImmediately: true);
+  ref.onDispose(notifier.dispose);
+  return notifier;
+});
+
+final appRouterProvider = Provider<GoRouter>((ref) {
+  final refreshListenable = ref.watch(_routerRefreshNotifierProvider);
+
+  return GoRouter(
+    initialLocation: '/',
+    refreshListenable: refreshListenable,
+    redirect: (context, state) {
+      return resolveAuthRedirect(
+        location: state.matchedLocation,
+        authReady: ref.read(authReadyProvider),
+        hasSession: ref.read(sessionProvider) != null,
+        profileAsync: ref.read(currentProfileProvider),
+      );
+    },
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/profile-setup',
+        builder: (context, state) => const ProfileSetupScreen(),
+      ),
+      GoRoute(
+        path: '/dashboard',
+        builder: (context, state) => const DashboardScreen(),
+      ),
+    ],
+  );
+});
