@@ -29,7 +29,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(groupState.group?.name ?? 'Loading...'),
+        title: Text(groupState.groupId != null ? 'Group Details' : 'Loading...'),
         actions: [
           if (groupState.members.isNotEmpty)
             Padding(
@@ -76,9 +76,10 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
   }
 
   Widget _buildBody() {
+    final groupState = ref.watch(groupStateNotifierProvider);
     switch (_currentIndex) {
       case 0:
-        return const Center(child: Text('Expenses Tab'));
+        return _buildExpensesTab(groupState);
       case 1:
         return const Center(child: Text('Balances Tab'));
       case 2:
@@ -88,5 +89,40 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
       default:
         return const SizedBox.shrink();
     }
+  }
+
+  Widget _buildExpensesTab(groupState) {
+    if (groupState.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (groupState.expenses.isEmpty) {
+      return const Center(child: Text('No expenses yet.'));
+    }
+    return ListView.builder(
+      itemCount: groupState.expenses.length,
+      itemBuilder: (context, index) {
+        final expense = groupState.expenses[index];
+        final payer = groupState.members.firstWhere(
+          (m) => m.id == expense.payerId,
+          orElse: () => groupState.members.first,
+        );
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: ListTile(
+            leading: const CircleAvatar(child: Icon(Icons.receipt)),
+            title: Text(expense.description),
+            subtitle: Text('${payer.name} paid ₹${expense.amount.toStringAsFixed(2)}'),
+            trailing: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(expense.category.name.toUpperCase(), style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                Text(expense.splitType.name.toUpperCase(), style: const TextStyle(fontSize: 12)),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }

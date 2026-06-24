@@ -126,7 +126,7 @@ class _AddExpenseModalState extends ConsumerState<AddExpenseModal> {
       amount: amount,
       payerId: _selectedPayerId!,
       category: _selectedCategory,
-      splitType: _splitType,
+      splitType: SplitType.fromString(_splitType),
       userOwedAmounts: splitAmounts,
     );
 
