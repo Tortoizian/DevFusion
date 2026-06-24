@@ -10,6 +10,7 @@ import '../../features/auth/splash_screen.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/groups/create_group_screen.dart';
 import '../../features/groups/join_group_screen.dart';
+import '../../features/groups/group_detail_screen.dart';
 
 class _RouterRefreshNotifier extends ChangeNotifier {
   void refresh() => notifyListeners();
@@ -65,6 +66,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/groups/join',
         builder: (context, state) => const JoinGroupScreen(),
+      ),
+      GoRoute(
+        path: '/groups/:groupId',
+        builder: (context, state) {
+          final groupId = state.pathParameters['groupId']!;
+          return GroupDetailScreen(groupId: groupId);
+        },
       ),
     ],
   );
