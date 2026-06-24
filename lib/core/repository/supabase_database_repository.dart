@@ -112,15 +112,13 @@ class SupabaseDatabaseRepository implements DatabaseRepository {
 
   @override
   Future<void> joinGroupWithCode(String inviteCode, String userId) async {
-    final group = await _client
-        .from('groups')
-        .select()
-        .eq('invite_code', inviteCode.toUpperCase())
-        .single();
+    final sessionUserId = _client.auth.currentUser?.id;
+    if (sessionUserId == null || sessionUserId != userId) {
+      throw StateError('Not authenticated');
+    }
 
-    await _client.from('group_members').upsert({
-      'group_id': group['id'],
-      'user_id': userId,
+    await _client.rpc('join_group_by_invite_code', params: {
+      'code': inviteCode.trim().toUpperCase(),
     });
   }
 

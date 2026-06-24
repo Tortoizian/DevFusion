@@ -64,11 +64,7 @@ class DashboardScreen extends ConsumerWidget {
             AppButton(
               label: 'Join Group',
               isOutlined: true,
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Join group will be available soon')),
-                );
-              },
+              onPressed: () => context.push('/groups/join'),
             ),
           ],
         ),
