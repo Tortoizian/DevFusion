@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:uuid/uuid.dart';
 import '../models/models.dart';
+import '../utils/invite_code_generator.dart';
 import 'database_repository.dart';
 
 class MockDatabaseRepository implements DatabaseRepository {
@@ -137,8 +138,7 @@ class MockDatabaseRepository implements DatabaseRepository {
   @override
   Future<GroupModel> createGroup(String name, String creatorId) async {
     await Future.delayed(const Duration(milliseconds: 300));
-    final inviteCode = name.substring(0, _min(name.length, 4)).toUpperCase() +
-        _uuid.v4().substring(0, 2).toUpperCase();
+    final inviteCode = InviteCodeGenerator.generate();
     final group = GroupModel(
       id: _uuid.v4(),
       name: name,
@@ -157,8 +157,6 @@ class MockDatabaseRepository implements DatabaseRepository {
 
     return group;
   }
-
-  int _min(int a, int b) => a < b ? a : b;
 
   @override
   Future<void> joinGroupWithCode(String inviteCode, String userId) async {

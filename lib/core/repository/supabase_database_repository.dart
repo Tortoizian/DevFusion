@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
+import '../utils/invite_code_generator.dart';
 import 'database_repository.dart';
 
 class SupabaseDatabaseRepository implements DatabaseRepository {
@@ -10,8 +10,6 @@ class SupabaseDatabaseRepository implements DatabaseRepository {
       : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
-  static final _random = Random();
-  static const _inviteCharset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
   @override
   Future<UserModel> fetchUserProfile(String userId) async {
@@ -80,7 +78,7 @@ class SupabaseDatabaseRepository implements DatabaseRepository {
 
     for (var attempt = 0; attempt < 3; attempt++) {
       try {
-        final inviteCode = _generateInviteCode();
+        final inviteCode = InviteCodeGenerator.generate();
         final data = await _client
             .from('groups')
             .insert({
@@ -254,13 +252,6 @@ class SupabaseDatabaseRepository implements DatabaseRepository {
         subscriptions.clear();
       };
     });
-  }
-
-  String _generateInviteCode() {
-    return List.generate(
-      6,
-      (_) => _inviteCharset[_random.nextInt(_inviteCharset.length)],
-    ).join();
   }
 
 }
