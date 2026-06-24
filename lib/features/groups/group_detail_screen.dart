@@ -175,7 +175,61 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
             ],
           ),
         ),
+        const SizedBox(height: 16),
+        AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Simplified transfers',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 16),
+              if (groupState.simplifiedDebts.isEmpty)
+                Text(
+                  'Nothing to settle right now.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                )
+              else
+                ...groupState.simplifiedDebts.map((transfer) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Row(
+                      children: [
+                        const CircleAvatar(
+                          radius: 18,
+                          child: Icon(Icons.swap_horiz, size: 18),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            '${_memberName(groupState, transfer.fromUserId)} pays ${_memberName(groupState, transfer.toUserId)}',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ),
+                        Text(
+                          '₹${transfer.amount.toStringAsFixed(2)}',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+            ],
+          ),
+        ),
       ],
     );
+  }
+
+  String _memberName(GroupState groupState, String userId) {
+    return groupState.members
+        .firstWhere(
+          (member) => member.id == userId,
+          orElse: () => groupState.members.first,
+        )
+        .name;
   }
 }
