@@ -1,5 +1,4 @@
 -- SplitSmart: Row Level Security for all tables
--- Run in Supabase SQL Editor after 004_settlements.sql
 
 create or replace function public.is_group_member(gid uuid)
 returns boolean

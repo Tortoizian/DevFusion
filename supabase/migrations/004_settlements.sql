@@ -1,5 +1,4 @@
 -- SplitSmart: UPI settlement records (pending → confirmed)
--- Run in Supabase SQL Editor after 003_expenses.sql
 
 create table public.settlements (
   id uuid primary key default gen_random_uuid(),

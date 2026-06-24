@@ -1,5 +1,4 @@
 -- SplitSmart: expenses and per-member split breakdown
--- Run in Supabase SQL Editor after 002_groups.sql
 
 create table public.expenses (
   id uuid primary key default gen_random_uuid(),

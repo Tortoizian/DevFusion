@@ -1,5 +1,4 @@
 -- SplitSmart: user profiles linked to Supabase Auth
--- Run in Supabase SQL Editor (Dashboard → SQL → New query)
 
 create table public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,

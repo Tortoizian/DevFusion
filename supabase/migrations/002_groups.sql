@@ -1,5 +1,4 @@
 -- SplitSmart: groups and membership junction table
--- Run in Supabase SQL Editor after 001_profiles.sql
 
 create table public.groups (
   id uuid primary key default gen_random_uuid(),
