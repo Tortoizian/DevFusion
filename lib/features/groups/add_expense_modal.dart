@@ -21,6 +21,7 @@ class _AddExpenseModalState extends ConsumerState<AddExpenseModal> {
   String _splitType = 'equal'; // Default
   final Map<String, TextEditingController> _exactControllers = {};
   final Map<String, TextEditingController> _percentControllers = {};
+  final Map<String, TextEditingController> _shareControllers = {};
 
   @override
   void dispose() {
@@ -30,6 +31,9 @@ class _AddExpenseModalState extends ConsumerState<AddExpenseModal> {
       controller.dispose();
     }
     for (final controller in _percentControllers.values) {
+      controller.dispose();
+    }
+    for (final controller in _shareControllers.values) {
       controller.dispose();
     }
     super.dispose();
@@ -90,6 +94,27 @@ class _AddExpenseModalState extends ConsumerState<AddExpenseModal> {
         } else {
           final pct = double.tryParse(_percentControllers[members[i].id]?.text ?? '0') ?? 0.0;
           final split = double.parse((amount * pct / 100).toStringAsFixed(2));
+          splitAmounts[members[i].id] = split;
+          currentSum += split;
+        }
+      }
+    } else if (_splitType == 'shares') {
+      double sumShares = 0;
+      for (final m in members) {
+        final share = double.tryParse(_shareControllers[m.id]?.text ?? '1') ?? 0.0;
+        sumShares += share;
+      }
+      if (sumShares <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Total shares must be greater than 0')));
+        return;
+      }
+      double currentSum = 0;
+      for (int i = 0; i < members.length; i++) {
+        if (i == members.length - 1) {
+          splitAmounts[members[i].id] = double.parse((amount - currentSum).toStringAsFixed(2));
+        } else {
+          final share = double.tryParse(_shareControllers[members[i].id]?.text ?? '1') ?? 0.0;
+          final split = double.parse((amount * share / sumShares).toStringAsFixed(2));
           splitAmounts[members[i].id] = split;
           currentSum += split;
         }
@@ -168,6 +193,7 @@ class _AddExpenseModalState extends ConsumerState<AddExpenseModal> {
                 ButtonSegment(value: 'equal', label: Text('Equal')),
                 ButtonSegment(value: 'exact', label: Text('Exact')),
                 ButtonSegment(value: 'percentage', label: Text('%')),
+                ButtonSegment(value: 'shares', label: Text('Shares')),
               ],
               selected: {_splitType},
               onSelectionChanged: (set) {
@@ -195,6 +221,18 @@ class _AddExpenseModalState extends ConsumerState<AddExpenseModal> {
                     controller: _percentControllers[m.id],
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(labelText: '${m.name} owes (%)', border: const OutlineInputBorder()),
+                  ),
+                );
+              }),
+            if (_splitType == 'shares')
+              ...groupState.members.map((m) {
+                _shareControllers.putIfAbsent(m.id, () => TextEditingController(text: '1'));
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: TextField(
+                    controller: _shareControllers[m.id],
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(labelText: '${m.name} shares', border: const OutlineInputBorder()),
                   ),
                 );
               }),
