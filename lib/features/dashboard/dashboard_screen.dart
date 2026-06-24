@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/auth/profile_provider.dart';
 import '../../core/models/user_model.dart';
 import '../../shared/widgets/app_button.dart';
@@ -57,11 +58,7 @@ class DashboardScreen extends ConsumerWidget {
             if (!hasGroups && !userGroupsAsync.isLoading) const DashboardEmptyState(),
             AppButton(
               label: 'Create Group',
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Create group will be available soon')),
-                );
-              },
+              onPressed: () => context.push('/groups/create'),
             ),
             const SizedBox(height: 12),
             AppButton(

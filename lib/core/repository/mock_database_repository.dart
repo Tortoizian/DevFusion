@@ -136,7 +136,11 @@ class MockDatabaseRepository implements DatabaseRepository {
   }
 
   @override
-  Future<GroupModel> createGroup(String name, String creatorId) async {
+  Future<GroupModel> createGroup(
+    String name,
+    String creatorId, {
+    GroupCategory category = GroupCategory.other,
+  }) async {
     await Future.delayed(const Duration(milliseconds: 300));
     final inviteCode = InviteCodeGenerator.generate();
     final group = GroupModel(

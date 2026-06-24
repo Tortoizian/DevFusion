@@ -1,3 +1,23 @@
+enum GroupCategory {
+  food,
+  travel,
+  rent,
+  utilities,
+  entertainment,
+  other;
+
+  String get label {
+    return switch (this) {
+      GroupCategory.food => 'Food',
+      GroupCategory.travel => 'Travel',
+      GroupCategory.rent => 'Rent',
+      GroupCategory.utilities => 'Utilities',
+      GroupCategory.entertainment => 'Entertainment',
+      GroupCategory.other => 'Other',
+    };
+  }
+}
+
 class GroupModel {
   final String id;
   final String name;

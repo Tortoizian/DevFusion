@@ -73,7 +73,11 @@ class SupabaseDatabaseRepository implements DatabaseRepository {
   }
 
   @override
-  Future<GroupModel> createGroup(String name, String creatorId) async {
+  Future<GroupModel> createGroup(
+    String name,
+    String creatorId, {
+    GroupCategory category = GroupCategory.other,
+  }) async {
     PostgrestException? lastError;
 
     for (var attempt = 0; attempt < 3; attempt++) {
@@ -85,7 +89,7 @@ class SupabaseDatabaseRepository implements DatabaseRepository {
               'name': name,
               'invite_code': inviteCode,
               'created_by': creatorId,
-              'category': 'other',
+              'category': category.name,
             })
             .select()
             .single();

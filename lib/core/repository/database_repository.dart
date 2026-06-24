@@ -8,7 +8,11 @@ abstract class DatabaseRepository {
   Future<void> createUserProfile(UserModel user);
 
   /// Creates a new group.
-  Future<GroupModel> createGroup(String name, String creatorId);
+  Future<GroupModel> createGroup(
+    String name,
+    String creatorId, {
+    GroupCategory category = GroupCategory.other,
+  });
 
   /// Joins a group using an invite code.
   Future<void> joinGroupWithCode(String inviteCode, String userId);
