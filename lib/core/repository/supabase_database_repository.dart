@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -153,16 +154,76 @@ class SupabaseDatabaseRepository implements DatabaseRepository {
   }
 
   @override
-  Stream<List<ExpenseModel>> streamExpenses(String groupId) =>
-      _unimplemented('streamExpenses');
+  Stream<List<ExpenseModel>> streamExpenses(String groupId) {
+    return _client
+        .from('expenses')
+        .stream(primaryKey: ['id'])
+        .eq('group_id', groupId)
+        .map(
+          (rows) => rows.map((row) => ExpenseModel.fromJson(row)).toList(),
+        );
+  }
 
   @override
-  Stream<List<ExpenseSplitModel>> streamSplits(String groupId) =>
-      _unimplemented('streamSplits');
+  Stream<List<ExpenseSplitModel>> streamSplits(String groupId) {
+    return _combinedRealtimeStream(
+      fetch: () => _fetchSplitsForGroup(groupId),
+      watches: [
+        _client.from('expenses').stream(primaryKey: ['id']).eq('group_id', groupId),
+        _client.from('expense_splits').stream(primaryKey: ['id']),
+      ],
+    );
+  }
 
   @override
-  Stream<List<SettlementModel>> streamSettlements(String groupId) =>
-      _unimplemented('streamSettlements');
+  Stream<List<SettlementModel>> streamSettlements(String groupId) {
+    return _client
+        .from('settlements')
+        .stream(primaryKey: ['id'])
+        .eq('group_id', groupId)
+        .map(
+          (rows) => rows.map((row) => SettlementModel.fromJson(row)).toList(),
+        );
+  }
+
+  Future<List<ExpenseSplitModel>> _fetchSplitsForGroup(String groupId) async {
+    final expenses = await _client.from('expenses').select('id').eq('group_id', groupId);
+    final expenseIds = expenses.map((row) => row['id'] as String).toList();
+    if (expenseIds.isEmpty) return [];
+
+    final rows = await _client.from('expense_splits').select().inFilter('expense_id', expenseIds);
+    return rows.map((row) => ExpenseSplitModel.fromJson(row)).toList();
+  }
+
+  Stream<List<T>> _combinedRealtimeStream<T>({
+    required Future<List<T>> Function() fetch,
+    required List<Stream<List<Map<String, dynamic>>>> watches,
+  }) {
+    final subscriptions = <StreamSubscription<List<Map<String, dynamic>>>>[];
+
+    return Stream<List<T>>.multi((controller) async {
+      Future<void> emitLatest() async {
+        try {
+          controller.add(await fetch());
+        } catch (error, stackTrace) {
+          controller.addError(error, stackTrace);
+        }
+      }
+
+      await emitLatest();
+
+      for (final watch in watches) {
+        subscriptions.add(watch.listen((_) => emitLatest(), onError: controller.addError));
+      }
+
+      controller.onCancel = () async {
+        for (final subscription in subscriptions) {
+          await subscription.cancel();
+        }
+        subscriptions.clear();
+      };
+    });
+  }
 
   String _generateInviteCode() {
     return List.generate(
@@ -171,7 +232,4 @@ class SupabaseDatabaseRepository implements DatabaseRepository {
     ).join();
   }
 
-  Never _unimplemented(String method) {
-    throw UnimplementedError('$method is not implemented yet');
-  }
 }
