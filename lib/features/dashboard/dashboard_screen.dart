@@ -1,13 +1,73 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/auth/profile_provider.dart';
+import '../../core/models/user_model.dart';
+import '../../shared/widgets/app_button.dart';
+import 'widgets/dashboard_empty_state.dart';
+import 'widgets/global_balance_card.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
+  String _avatarUrl(String name) {
+    return UserModel(
+      id: '',
+      name: name,
+      upiId: '',
+      createdAt: DateTime.now(),
+    ).avatarUrl.replaceFirst('/svg?', '/png?');
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref.watch(currentProfileProvider).valueOrNull;
+    final displayName = profile?.name ?? 'there';
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard')),
-      body: const Center(child: Text('Dashboard — coming in Step 24')),
+      appBar: AppBar(
+        title: const Text('SplitSmart'),
+        actions: [
+          if (profile != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: CircleAvatar(
+                backgroundImage: NetworkImage(_avatarUrl(profile.name)),
+              ),
+            ),
+        ],
+      ),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Text(
+              'Hey, $displayName',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 16),
+            const GlobalBalanceCard(netBalance: 0),
+            const DashboardEmptyState(),
+            AppButton(
+              label: 'Create Group',
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Create group will be available soon')),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            AppButton(
+              label: 'Join Group',
+              isOutlined: true,
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Join group will be available soon')),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
