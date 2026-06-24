@@ -20,12 +20,16 @@ class _AddExpenseModalState extends ConsumerState<AddExpenseModal> {
   String? _selectedPayerId;
   String _splitType = 'equal'; // Default
   final Map<String, TextEditingController> _exactControllers = {};
+  final Map<String, TextEditingController> _percentControllers = {};
 
   @override
   void dispose() {
     _amountController.dispose();
     _descController.dispose();
     for (final controller in _exactControllers.values) {
+      controller.dispose();
+    }
+    for (final controller in _percentControllers.values) {
       controller.dispose();
     }
     super.dispose();
@@ -68,6 +72,27 @@ class _AddExpenseModalState extends ConsumerState<AddExpenseModal> {
       if ((sum - amount).abs() > 0.01) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Exact amounts must sum up to total')));
         return;
+      }
+    } else if (_splitType == 'percentage') {
+      double sumPercent = 0;
+      for (final m in members) {
+        final pct = double.tryParse(_percentControllers[m.id]?.text ?? '0') ?? 0.0;
+        sumPercent += pct;
+      }
+      if ((sumPercent - 100).abs() > 0.01) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Percentages must sum up to 100')));
+        return;
+      }
+      double currentSum = 0;
+      for (int i = 0; i < members.length; i++) {
+        if (i == members.length - 1) {
+          splitAmounts[members[i].id] = double.parse((amount - currentSum).toStringAsFixed(2));
+        } else {
+          final pct = double.tryParse(_percentControllers[members[i].id]?.text ?? '0') ?? 0.0;
+          final split = double.parse((amount * pct / 100).toStringAsFixed(2));
+          splitAmounts[members[i].id] = split;
+          currentSum += split;
+        }
       }
     }
 
@@ -142,6 +167,7 @@ class _AddExpenseModalState extends ConsumerState<AddExpenseModal> {
               segments: const [
                 ButtonSegment(value: 'equal', label: Text('Equal')),
                 ButtonSegment(value: 'exact', label: Text('Exact')),
+                ButtonSegment(value: 'percentage', label: Text('%')),
               ],
               selected: {_splitType},
               onSelectionChanged: (set) {
@@ -157,6 +183,18 @@ class _AddExpenseModalState extends ConsumerState<AddExpenseModal> {
                     controller: _exactControllers[m.id],
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(labelText: '${m.name} owes (₹)', border: const OutlineInputBorder()),
+                  ),
+                );
+              }),
+            if (_splitType == 'percentage')
+              ...groupState.members.map((m) {
+                _percentControllers.putIfAbsent(m.id, () => TextEditingController());
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: TextField(
+                    controller: _percentControllers[m.id],
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(labelText: '${m.name} owes (%)', border: const OutlineInputBorder()),
                   ),
                 );
               }),
