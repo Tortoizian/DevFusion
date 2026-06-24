@@ -20,6 +20,37 @@ class SupabaseDatabaseRepository implements DatabaseRepository {
   }
 
   @override
+  Future<List<GroupModel>> fetchUserGroups(String userId) async {
+    final rows = await _client
+        .from('group_members')
+        .select('groups(*)')
+        .eq('user_id', userId);
+
+    return rows
+        .map((row) => row['groups'])
+        .whereType<Map<String, dynamic>>()
+        .map(GroupModel.fromJson)
+        .toList();
+  }
+
+  @override
+  Future<List<ExpenseModel>> fetchExpensesForGroup(String groupId) async {
+    final rows = await _client.from('expenses').select().eq('group_id', groupId);
+    return rows.map((row) => ExpenseModel.fromJson(row)).toList();
+  }
+
+  @override
+  Future<List<ExpenseSplitModel>> fetchSplitsForGroup(String groupId) async {
+    return _fetchSplitsForGroup(groupId);
+  }
+
+  @override
+  Future<List<SettlementModel>> fetchSettlementsForGroup(String groupId) async {
+    final rows = await _client.from('settlements').select().eq('group_id', groupId);
+    return rows.map((row) => SettlementModel.fromJson(row)).toList();
+  }
+
+  @override
   Future<List<UserModel>> fetchGroupMembers(String groupId) async {
     final rows = await _client
         .from('group_members')

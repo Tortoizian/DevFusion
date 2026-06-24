@@ -16,6 +16,18 @@ abstract class DatabaseRepository {
   /// Fetches all members of a specific group.
   Future<List<UserModel>> fetchGroupMembers(String groupId);
 
+  /// Fetches all groups the user belongs to.
+  Future<List<GroupModel>> fetchUserGroups(String userId);
+
+  /// One-shot fetch of a group's expenses (for balance calculations).
+  Future<List<ExpenseModel>> fetchExpensesForGroup(String groupId);
+
+  /// One-shot fetch of a group's expense splits.
+  Future<List<ExpenseSplitModel>> fetchSplitsForGroup(String groupId);
+
+  /// One-shot fetch of a group's settlements.
+  Future<List<SettlementModel>> fetchSettlementsForGroup(String groupId);
+
   /// Streams all expenses for a specific group.
   Stream<List<ExpenseModel>> streamExpenses(String groupId);
 

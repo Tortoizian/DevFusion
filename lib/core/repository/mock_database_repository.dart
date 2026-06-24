@@ -190,6 +190,34 @@ class MockDatabaseRepository implements DatabaseRepository {
   }
 
   @override
+  Future<List<GroupModel>> fetchUserGroups(String userId) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    final groupIds = _groupMembers
+        .where((m) => m.userId == userId)
+        .map((m) => m.groupId)
+        .toSet();
+    return _groups.where((g) => groupIds.contains(g.id)).toList();
+  }
+
+  @override
+  Future<List<ExpenseModel>> fetchExpensesForGroup(String groupId) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    return _getExpensesForGroup(groupId);
+  }
+
+  @override
+  Future<List<ExpenseSplitModel>> fetchSplitsForGroup(String groupId) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    return _getSplitsForGroup(groupId);
+  }
+
+  @override
+  Future<List<SettlementModel>> fetchSettlementsForGroup(String groupId) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    return _getSettlementsForGroup(groupId);
+  }
+
+  @override
   Stream<List<ExpenseModel>> streamExpenses(String groupId) {
     return _getController(groupId, _expenseControllers, _getExpensesForGroup).stream;
   }
