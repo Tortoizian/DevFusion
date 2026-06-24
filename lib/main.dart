@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'core/repository/supabase_database_repository.dart';
 import 'core/router/app_router.dart';
+import 'core/state/group_state_notifier.dart';
 import 'core/theme/app_theme.dart';
 
 Future<void> main() async {
@@ -19,8 +21,11 @@ Future<void> main() async {
   );
 
   runApp(
-    const ProviderScope(
-      child: MyApp(),
+    ProviderScope(
+      overrides: [
+        databaseRepositoryProvider.overrideWithValue(SupabaseDatabaseRepository()),
+      ],
+      child: const MyApp(),
     ),
   );
 }
