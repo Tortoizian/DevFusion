@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/state/group_state_notifier.dart';
+import 'add_expense_modal.dart';
 
 class GroupDetailScreen extends ConsumerStatefulWidget {
   final String groupId;
@@ -62,7 +63,11 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
       floatingActionButton: _currentIndex == 0
           ? FloatingActionButton(
               onPressed: () {
-                // TODO: Open AddExpenseModal
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (ctx) => AddExpenseModal(groupId: widget.groupId),
+                );
               },
               child: const Icon(Icons.add),
             )
