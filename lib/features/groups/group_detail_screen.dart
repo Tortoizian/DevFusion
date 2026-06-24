@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/state/group_state.dart';
 import '../../core/state/group_state_notifier.dart';
+import '../../shared/widgets/app_card.dart';
+import '../../shared/widgets/balance_chip.dart';
 import 'add_expense_modal.dart';
 
 class GroupDetailScreen extends ConsumerStatefulWidget {
@@ -81,7 +84,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
       case 0:
         return _buildExpensesTab(groupState);
       case 1:
-        return const Center(child: Text('Balances Tab'));
+        return _buildBalancesTab(groupState);
       case 2:
         return const Center(child: Text('History Tab'));
       case 3:
@@ -123,6 +126,56 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildBalancesTab(GroupState groupState) {
+    if (groupState.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (groupState.members.isEmpty) {
+      return const Center(child: Text('No balances yet.'));
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Net balances',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 16),
+              ...groupState.members.map((member) {
+                final balance = groupState.netBalances[member.id] ?? 0.0;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    children: [
+                      const CircleAvatar(
+                        radius: 18,
+                        child: Icon(Icons.person, size: 18),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          member.name,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                      BalanceChip(balance: balance),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
