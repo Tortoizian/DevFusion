@@ -113,11 +113,7 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
                 ),
                 const SizedBox(height: 16),
                 TextButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('QR scanning will be available soon')),
-                    );
-                  },
+                  onPressed: () => context.push('/groups/join/scan'),
                   child: const Text('Scan QR instead'),
                 ),
               ],
