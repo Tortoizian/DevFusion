@@ -5,6 +5,7 @@ import '../../core/state/group_state_notifier.dart';
 import '../../shared/widgets/app_card.dart';
 import '../../shared/widgets/balance_chip.dart';
 import 'add_expense_modal.dart';
+import 'widgets/debt_graph_widget.dart';
 
 class GroupDetailScreen extends ConsumerStatefulWidget {
   final String groupId;
@@ -17,6 +18,7 @@ class GroupDetailScreen extends ConsumerStatefulWidget {
 
 class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
   int _currentIndex = 0;
+  bool _showSimplifiedGraph = false;
 
   @override
   void initState() {
@@ -174,6 +176,16 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
               }),
             ],
           ),
+        ),
+        const SizedBox(height: 16),
+        DebtGraphWidget(
+          groupState: groupState,
+          showSimplified: _showSimplifiedGraph,
+          onToggleSimplify: () {
+            setState(() {
+              _showSimplifiedGraph = !_showSimplifiedGraph;
+            });
+          },
         ),
         const SizedBox(height: 16),
         AppCard(
