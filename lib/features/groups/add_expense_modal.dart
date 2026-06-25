@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models/expense_model.dart';
 import '../../core/state/group_state_notifier.dart';
 import '../../core/utils/category_classifier.dart';
+import '../../core/utils/ocr_scanner_service.dart';
 import 'package:image_picker/image_picker.dart';
 
 class AddExpenseModal extends ConsumerStatefulWidget {
@@ -53,6 +54,31 @@ class _AddExpenseModalState extends ConsumerState<AddExpenseModal> {
     final xfile = await picker.pickImage(source: ImageSource.camera);
     if (xfile != null) {
       setState(() => _imagePath = xfile.path);
+    }
+  }
+
+  Future<void> _scanBill() async {
+    final picker = ImagePicker();
+    final xfile = await picker.pickImage(source: ImageSource.camera);
+    if (xfile != null) {
+      setState(() => _imagePath = xfile.path);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Scanning bill...')));
+      final text = await OcrScannerService.scanImage(xfile.path);
+      if (text != null) {
+        final amount = OcrScannerService.extractAmount(text);
+        if (amount != null) {
+          setState(() {
+            _amountController.text = amount.toStringAsFixed(2);
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Amount extracted!')));
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not find amount in bill.')));
+          }
+        }
+      }
     }
   }
 
@@ -262,19 +288,33 @@ class _AddExpenseModalState extends ConsumerState<AddExpenseModal> {
             const SizedBox(height: 16),
             Row(
               children: [
-                OutlinedButton.icon(
-                  onPressed: _pickImage,
-                  icon: const Icon(Icons.camera_alt),
-                  label: const Text('Add Receipt'),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _pickImage,
+                    icon: const Icon(Icons.camera_alt),
+                    label: const Text('Add Receipt'),
+                  ),
                 ),
-                if (_imagePath != null) ...[
-                  const SizedBox(width: 8),
-                  const Icon(Icons.check_circle, color: Colors.green),
-                  const SizedBox(width: 4),
-                  const Text('Attached'),
-                ]
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _scanBill,
+                    icon: const Icon(Icons.document_scanner),
+                    label: const Text('Scan Bill'),
+                  ),
+                ),
               ],
             ),
+            if (_imagePath != null) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: const [
+                  Icon(Icons.check_circle, color: Colors.green),
+                  SizedBox(width: 4),
+                  Text('Attached'),
+                ],
+              ),
+            ],
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _isSaving ? null : _saveExpense,
