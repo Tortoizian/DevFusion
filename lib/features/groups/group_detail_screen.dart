@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models/user_model.dart';
 import '../../core/state/group_state.dart';
 import '../../core/state/group_state_notifier.dart';
+import '../../core/utils/settlement_memo.dart';
 import '../../core/utils/upi_launcher.dart';
 import '../../shared/widgets/app_card.dart';
 import '../../shared/widgets/balance_chip.dart';
@@ -322,7 +323,10 @@ class _SettleUpSheetState extends ConsumerState<_SettleUpSheet> {
       vpa: payee.upiId,
       payeeName: widget.creditorName,
       amount: widget.amount,
-      memo: 'SplitSmart',
+      memo: SettlementMemo.build(
+        groupName: widget.groupName,
+        expenseCount: widget.expenseCount,
+      ),
     );
 
     if (!mounted) return;
