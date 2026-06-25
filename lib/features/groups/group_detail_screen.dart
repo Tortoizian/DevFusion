@@ -12,6 +12,8 @@ import '../../shared/widgets/balance_chip.dart';
 import 'add_expense_modal.dart';
 import 'widgets/debt_graph_widget.dart';
 
+import '../../core/models/expense_model.dart';
+
 class GroupDetailScreen extends ConsumerStatefulWidget {
   final String groupId;
 
@@ -23,6 +25,7 @@ class GroupDetailScreen extends ConsumerStatefulWidget {
 
 class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
   int _currentIndex = 0;
+  ExpenseCategory? _historyFilterCategory;
   bool _showSimplifiedGraph = false;
 
   @override
@@ -93,7 +96,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
       case 1:
         return _buildBalancesTab(groupState);
       case 2:
-        return const Center(child: Text('History Tab'));
+        return _buildHistoryTab(groupState);
       case 3:
         return const Center(child: Text('Analytics Tab'));
       default:
@@ -344,7 +347,75 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
       },
     );
   }
+
+  Widget _buildHistoryTab(groupState) {
+    if (groupState.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final sortedExpenses = List<ExpenseModel>.from(groupState.expenses)
+      ..sort((a, b) => b.createdAt!.compareTo(a.createdAt!));
+
+    final filtered = sortedExpenses.where((e) {
+      if (_historyFilterCategory != null && e.category != _historyFilterCategory) return false;
+      return true;
+    }).toList();
+
+    return Column(
+      children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              FilterChip(
+                label: const Text('All'),
+                selected: _historyFilterCategory == null,
+                onSelected: (_) => setState(() => _historyFilterCategory = null),
+              ),
+              const SizedBox(width: 8),
+              ...ExpenseCategory.values.map((cat) => Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: FilterChip(
+                  label: Text(cat.name.toUpperCase()),
+                  selected: _historyFilterCategory == cat,
+                  onSelected: (_) => setState(() => _historyFilterCategory = cat),
+                ),
+              )),
+            ],
+          ),
+        ),
+        Expanded(
+          child: filtered.isEmpty
+              ? const Center(child: Text('No expenses match filters.'))
+              : ListView.builder(
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) {
+                    final expense = filtered[index];
+                    final payer = groupState.members.firstWhere(
+                      (m) => m.id == expense.payerId,
+                      orElse: () => groupState.members.first,
+                    );
+                    return Card(
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      child: ListTile(
+                        leading: const CircleAvatar(child: Icon(Icons.history)),
+                        title: Text(expense.description),
+                        subtitle: Text('${payer.name} paid ₹${expense.amount.toStringAsFixed(2)}'),
+                        trailing: Text(
+                          expense.createdAt?.toString().split(' ')[0] ?? '',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
 }
+
 
 class _SettleUpSheet extends ConsumerStatefulWidget {
   final String debtorId;
