@@ -398,6 +398,12 @@ class _SettleUpSheetState extends ConsumerState<_SettleUpSheet> {
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleLarge,
             ),
+            const SizedBox(height: 8),
+            Text(
+              'After returning from UPI, tap Mark as Paid to create a pending settlement for confirmation.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _launching ? null : _launchUpi,
