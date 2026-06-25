@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/auth/auth_provider.dart';
 import '../../core/models/user_model.dart';
+import '../../core/models/settlement_model.dart';
 import '../../core/state/group_state.dart';
 import '../../core/state/group_state_notifier.dart';
 import '../../core/utils/settlement_memo.dart';
@@ -146,6 +148,8 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        _buildPendingSettlements(groupState),
+        const SizedBox(height: 16),
         AppCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -250,6 +254,60 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPendingSettlements(GroupState groupState) {
+    final currentUserId = ref.watch(currentUserIdProvider);
+    final pendingSettlements = groupState.settlements.where((settlement) {
+      return settlement.status == SettlementStatus.pending &&
+          settlement.creditorId == currentUserId;
+    }).toList();
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Pending confirmations',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 16),
+          if (pendingSettlements.isEmpty)
+            Text(
+              'No pending settlements for you.',
+              style: Theme.of(context).textTheme.bodySmall,
+            )
+          else
+            ...pendingSettlements.map((settlement) {
+              final debtorName = _memberName(groupState, settlement.debtorId);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    const CircleAvatar(
+                      radius: 18,
+                      child: Icon(Icons.pending_actions, size: 18),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        '$debtorName marked ₹${settlement.amount.toStringAsFixed(2)} as paid',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => ref
+                          .read(groupStateNotifierProvider.notifier)
+                          .confirmSettlement(settlement.id),
+                      child: const Text('Confirm'),
+                    ),
+                  ],
+                ),
+              );
+            }),
+        ],
+      ),
     );
   }
 
