@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/models/user_model.dart';
 import '../../core/state/group_state.dart';
 import '../../core/state/group_state_notifier.dart';
+import '../../core/utils/upi_launcher.dart';
 import '../../shared/widgets/app_card.dart';
 import '../../shared/widgets/balance_chip.dart';
 import 'add_expense_modal.dart';
@@ -204,6 +206,8 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                 )
               else
                 ...groupState.simplifiedDebts.map((transfer) {
+                  final debtorName = _memberName(groupState, transfer.fromUserId);
+                  final creditorName = _memberName(groupState, transfer.toUserId);
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Row(
@@ -215,7 +219,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            '${_memberName(groupState, transfer.fromUserId)} pays ${_memberName(groupState, transfer.toUserId)}',
+                            '$debtorName pays $creditorName',
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         ),
@@ -224,6 +228,18 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                           style: Theme.of(context).textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.w700,
                               ),
+                        ),
+                        const SizedBox(width: 12),
+                        TextButton(
+                          onPressed: () => _showSettleSheet(
+                            transfer.fromUserId,
+                            transfer.toUserId,
+                            transfer.amount,
+                            debtorName,
+                            creditorName,
+                            groupState,
+                          ),
+                          child: const Text('Settle Up'),
                         ),
                       ],
                     ),
@@ -243,5 +259,154 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
           orElse: () => groupState.members.first,
         )
         .name;
+  }
+
+  Future<void> _showSettleSheet(
+    String debtorId,
+    String creditorId,
+    double amount,
+    String debtorName,
+    String creditorName,
+    GroupState groupState,
+  ) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return _SettleUpSheet(
+          debtorId: debtorId,
+          creditorId: creditorId,
+          amount: amount,
+          debtorName: debtorName,
+          creditorName: creditorName,
+          groupName: groupState.groupId ?? 'group',
+          expenseCount: groupState.expenses.length,
+        );
+      },
+    );
+  }
+}
+
+class _SettleUpSheet extends ConsumerStatefulWidget {
+  final String debtorId;
+  final String creditorId;
+  final double amount;
+  final String debtorName;
+  final String creditorName;
+  final String groupName;
+  final int expenseCount;
+
+  const _SettleUpSheet({
+    required this.debtorId,
+    required this.creditorId,
+    required this.amount,
+    required this.debtorName,
+    required this.creditorName,
+    required this.groupName,
+    required this.expenseCount,
+  });
+
+  @override
+  ConsumerState<_SettleUpSheet> createState() => _SettleUpSheetState();
+}
+
+class _SettleUpSheetState extends ConsumerState<_SettleUpSheet> {
+  bool _launching = false;
+  bool _launched = false;
+  bool _saving = false;
+
+  Future<void> _launchUpi() async {
+    setState(() => _launching = true);
+    final payee = _resolvePayee();
+    final launched = await UpiLauncher.launchSettlement(
+      vpa: payee.upiId,
+      payeeName: widget.creditorName,
+      amount: widget.amount,
+      memo: 'SplitSmart',
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _launching = false;
+      _launched = launched;
+    });
+
+    if (!launched) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('UPI is available on Android only')),
+      );
+    }
+  }
+
+  UserModel _resolvePayee() {
+    return ref.read(groupStateNotifierProvider).members.firstWhere(
+          (member) => member.id == widget.creditorId,
+          orElse: () => throw StateError('Payee not found'),
+        );
+  }
+
+  Future<void> _markAsPaid() async {
+    setState(() => _saving = true);
+    try {
+      await ref.read(groupStateNotifierProvider.notifier).settleDebt(
+            debtorId: widget.debtorId,
+            creditorId: widget.creditorId,
+            amount: widget.amount,
+          );
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Settlement marked as paid')),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not mark as paid: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'TEST MODE — Sandbox UPI',
+              style: Theme.of(context).textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '${widget.debtorName} pays ${widget.creditorName}',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '₹${widget.amount.toStringAsFixed(2)}',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _launching ? null : _launchUpi,
+              child: _launching ? const CircularProgressIndicator() : const Text('Open UPI'),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: _launched && !_saving ? _markAsPaid : null,
+              child: _saving ? const CircularProgressIndicator() : const Text('Mark as Paid'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
