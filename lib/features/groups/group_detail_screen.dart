@@ -705,7 +705,7 @@ class _SettleUpSheetState extends ConsumerState<_SettleUpSheet> {
           children: [
             Text(
               'TEST MODE — Sandbox UPI',
-              style: Theme.of(context).textTheme.titleMedium,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.red),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
