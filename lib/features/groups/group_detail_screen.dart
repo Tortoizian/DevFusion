@@ -12,6 +12,7 @@ import '../../shared/widgets/balance_chip.dart';
 import 'add_expense_modal.dart';
 import 'widgets/debt_graph_widget.dart';
 
+import 'package:fl_chart/fl_chart.dart';
 import '../../core/models/expense_model.dart';
 
 class GroupDetailScreen extends ConsumerStatefulWidget {
@@ -98,7 +99,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
       case 2:
         return _buildHistoryTab(groupState);
       case 3:
-        return const Center(child: Text('Analytics Tab'));
+        return _buildAnalyticsTab(groupState);
       default:
         return const SizedBox.shrink();
     }
@@ -448,6 +449,77 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                 ),
         ),
       ],
+    );
+  }
+
+  Widget _buildAnalyticsTab(GroupState groupState) {
+    if (groupState.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (groupState.expenses.isEmpty) {
+      return const Center(child: Text('No data for analytics yet.'));
+    }
+
+    final categoryTotals = <ExpenseCategory, double>{};
+    for (final expense in groupState.expenses) {
+      if (expense.category != ExpenseCategory.settlement) {
+        categoryTotals[expense.category] = (categoryTotals[expense.category] ?? 0) + expense.amount;
+      }
+    }
+
+    if (categoryTotals.isEmpty) {
+      return const Center(child: Text('No expenses to analyze.'));
+    }
+
+    final total = categoryTotals.values.fold(0.0, (a, b) => a + b);
+
+    final categoryColors = {
+      ExpenseCategory.food: Colors.orange,
+      ExpenseCategory.travel: Colors.blue,
+      ExpenseCategory.entertainment: Colors.purple,
+      ExpenseCategory.shopping: Colors.pink,
+      ExpenseCategory.accommodation: Colors.indigo,
+      ExpenseCategory.utilities: Colors.amber,
+      ExpenseCategory.other: Colors.grey,
+    };
+
+    final sections = categoryTotals.entries.map((entry) {
+      final percentage = (entry.value / total) * 100;
+      return PieChartSectionData(
+        color: categoryColors[entry.key] ?? Colors.grey,
+        value: entry.value,
+        title: '${percentage.toStringAsFixed(1)}%',
+        radius: 60,
+        titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+      );
+    }).toList();
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Text('Category Spending', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 24),
+          SizedBox(
+            height: 250,
+            child: PieChart(
+              PieChartData(
+                sectionsSpace: 2,
+                centerSpaceRadius: 40,
+                sections: sections,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          ...categoryTotals.entries.map((entry) {
+            return ListTile(
+              leading: CircleAvatar(backgroundColor: categoryColors[entry.key]),
+              title: Text(entry.key.name.toUpperCase()),
+              trailing: Text('₹${entry.value.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            );
+          }),
+        ],
+      ),
     );
   }
 }
