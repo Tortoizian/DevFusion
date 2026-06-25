@@ -243,6 +243,7 @@ class MockDatabaseRepository implements DatabaseRepository {
     required ExpenseCategory category,
     required SplitType splitType,
     required Map<String, double> userOwedAmounts,
+    String? imagePath,
   }) async {
     await Future.delayed(const Duration(milliseconds: 300));
     final expenseId = _uuid.v4();
@@ -255,6 +256,7 @@ class MockDatabaseRepository implements DatabaseRepository {
       category: category,
       splitType: splitType,
       createdAt: DateTime.now(),
+      receiptUrl: imagePath,
     );
 
     _expenses.add(expense);

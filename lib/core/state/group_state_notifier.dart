@@ -94,6 +94,7 @@ class GroupStateNotifier extends StateNotifier<GroupState> {
     required ExpenseCategory category,
     required SplitType splitType,
     required Map<String, double> userOwedAmounts,
+    String? imagePath,
   }) async {
     final groupId = state.groupId;
     if (groupId == null) {
@@ -110,6 +111,7 @@ class GroupStateNotifier extends StateNotifier<GroupState> {
         category: category,
         splitType: splitType,
         userOwedAmounts: userOwedAmounts,
+        imagePath: imagePath,
       );
     } catch (e) {
       state = state.copyWith(errorMessage: 'Failed to log expense: $e');

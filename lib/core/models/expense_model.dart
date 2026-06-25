@@ -38,6 +38,7 @@ class ExpenseModel {
   final ExpenseCategory category;
   final SplitType splitType;
   final DateTime createdAt;
+  final String? receiptUrl;
 
   ExpenseModel({
     required this.id,
@@ -48,6 +49,7 @@ class ExpenseModel {
     required this.category,
     required this.splitType,
     required this.createdAt,
+    this.receiptUrl,
   });
 
   factory ExpenseModel.fromJson(Map<String, dynamic> json) {
@@ -59,6 +61,7 @@ class ExpenseModel {
       payerId: json['payer_id'] as String,
       category: ExpenseCategory.fromString(json['category'] as String),
       splitType: SplitType.fromString(json['split_type'] as String),
+      receiptUrl: json['receipt_url'] as String?,
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at'] as String)
           : DateTime.now(),
@@ -74,6 +77,7 @@ class ExpenseModel {
       'payer_id': payerId,
       'category': category.name,
       'split_type': splitType.name,
+      if (receiptUrl != null) 'receipt_url': receiptUrl,
       'created_at': createdAt.toIso8601String(),
     };
   }
@@ -87,6 +91,7 @@ class ExpenseModel {
     ExpenseCategory? category,
     SplitType? splitType,
     DateTime? createdAt,
+    String? receiptUrl,
   }) {
     return ExpenseModel(
       id: id ?? this.id,
@@ -97,6 +102,7 @@ class ExpenseModel {
       category: category ?? this.category,
       splitType: splitType ?? this.splitType,
       createdAt: createdAt ?? this.createdAt,
+      receiptUrl: receiptUrl ?? this.receiptUrl,
     );
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models/expense_model.dart';
 import '../../core/state/group_state_notifier.dart';
 import '../../core/utils/category_classifier.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AddExpenseModal extends ConsumerStatefulWidget {
   final String groupId;
@@ -22,6 +23,8 @@ class _AddExpenseModalState extends ConsumerState<AddExpenseModal> {
   final Map<String, TextEditingController> _exactControllers = {};
   final Map<String, TextEditingController> _percentControllers = {};
   final Map<String, TextEditingController> _shareControllers = {};
+  String? _imagePath;
+  bool _isSaving = false;
 
   @override
   void dispose() {
@@ -45,12 +48,23 @@ class _AddExpenseModalState extends ConsumerState<AddExpenseModal> {
     });
   }
 
-  void _saveExpense() {
-    final amount = double.tryParse(_amountController.text) ?? 0.0;
-    if (amount <= 0 || _descController.text.isEmpty || _selectedPayerId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all fields')));
-      return;
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final xfile = await picker.pickImage(source: ImageSource.camera);
+    if (xfile != null) {
+      setState(() => _imagePath = xfile.path);
     }
+  }
+
+  Future<void> _saveExpense() async {
+    setState(() => _isSaving = true);
+    try {
+      final amount = double.tryParse(_amountController.text) ?? 0.0;
+      if (amount <= 0 || _descController.text.isEmpty || _selectedPayerId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all fields')));
+        setState(() => _isSaving = false);
+        return;
+      }
 
     final members = ref.read(groupStateNotifierProvider).members;
     final Map<String, double> splitAmounts = {};
@@ -75,6 +89,7 @@ class _AddExpenseModalState extends ConsumerState<AddExpenseModal> {
       }
       if ((sum - amount).abs() > 0.01) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Exact amounts must sum up to total')));
+        setState(() => _isSaving = false);
         return;
       }
     } else if (_splitType == 'percentage') {
@@ -85,6 +100,7 @@ class _AddExpenseModalState extends ConsumerState<AddExpenseModal> {
       }
       if ((sumPercent - 100).abs() > 0.01) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Percentages must sum up to 100')));
+        setState(() => _isSaving = false);
         return;
       }
       double currentSum = 0;
@@ -106,6 +122,7 @@ class _AddExpenseModalState extends ConsumerState<AddExpenseModal> {
       }
       if (sumShares <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Total shares must be greater than 0')));
+        setState(() => _isSaving = false);
         return;
       }
       double currentSum = 0;
@@ -121,16 +138,22 @@ class _AddExpenseModalState extends ConsumerState<AddExpenseModal> {
       }
     }
 
-    ref.read(groupStateNotifierProvider.notifier).addExpense(
+    await ref.read(groupStateNotifierProvider.notifier).addExpense(
       description: _descController.text,
       amount: amount,
       payerId: _selectedPayerId!,
       category: _selectedCategory,
       splitType: SplitType.fromString(_splitType),
       userOwedAmounts: splitAmounts,
+      imagePath: _imagePath,
     );
 
-    Navigator.pop(context);
+    if (mounted) {
+      Navigator.pop(context);
+    }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   @override
@@ -236,10 +259,26 @@ class _AddExpenseModalState extends ConsumerState<AddExpenseModal> {
                   ),
                 );
               }),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _pickImage,
+                  icon: const Icon(Icons.camera_alt),
+                  label: const Text('Add Receipt'),
+                ),
+                if (_imagePath != null) ...[
+                  const SizedBox(width: 8),
+                  const Icon(Icons.check_circle, color: Colors.green),
+                  const SizedBox(width: 4),
+                  const Text('Attached'),
+                ]
+              ],
+            ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: _saveExpense,
-              child: const Text('Save'),
+              onPressed: _isSaving ? null : _saveExpense,
+              child: _isSaving ? const CircularProgressIndicator() : const Text('Save'),
             ),
             const SizedBox(height: 24),
           ],

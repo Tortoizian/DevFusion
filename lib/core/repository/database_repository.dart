@@ -50,6 +50,7 @@ abstract class DatabaseRepository {
     required ExpenseCategory category,
     required SplitType splitType,
     required Map<String, double> userOwedAmounts, // Map of userId -> amount owed
+    String? imagePath,
   });
 
   /// Logs a settlement transaction (initially in 'pending' status).
