@@ -13,6 +13,7 @@ import 'add_expense_modal.dart';
 import 'widgets/debt_graph_widget.dart';
 
 import 'package:fl_chart/fl_chart.dart';
+import 'package:confetti/confetti.dart';
 import '../../core/models/expense_model.dart';
 
 class GroupDetailScreen extends ConsumerStatefulWidget {
@@ -27,22 +28,41 @@ class GroupDetailScreen extends ConsumerStatefulWidget {
 class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
   int _currentIndex = 0;
   ExpenseCategory? _historyFilterCategory;
+  ExpenseCategory? _historyFilterCategory;
   bool _showSimplifiedGraph = false;
+  late ConfettiController _confettiController;
 
   @override
   void initState() {
     super.initState();
+    _confettiController = ConfettiController(duration: const Duration(seconds: 3));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(groupStateNotifierProvider.notifier).loadGroup(widget.groupId);
     });
   }
 
   @override
+  void dispose() {
+    _confettiController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final groupState = ref.watch(groupStateNotifierProvider);
 
-    return Scaffold(
-      appBar: AppBar(
+    ref.listen(groupStateNotifierProvider, (previous, next) {
+      if (previous != null && !previous.isLoading && !next.isLoading) {
+        if (previous.simplifiedDebts.isNotEmpty && next.simplifiedDebts.isEmpty && next.expenses.isNotEmpty) {
+          _confettiController.play();
+        }
+      }
+    });
+
+    return Stack(
+      children: [
+        Scaffold(
+          appBar: AppBar(
         title: Text(groupState.groupId != null ? 'Group Details' : 'Loading...'),
         actions: [
           if (groupState.members.isNotEmpty)
@@ -86,6 +106,17 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
               child: const Icon(Icons.add),
             )
           : null,
+        ),
+        Align(
+          alignment: Alignment.topCenter,
+          child: ConfettiWidget(
+            confettiController: _confettiController,
+            blastDirectionality: BlastDirectionality.explosive,
+            shouldLoop: false,
+            colors: const [Colors.green, Colors.blue, Colors.pink, Colors.orange, Colors.purple],
+          ),
+        ),
+      ],
     );
   }
 
