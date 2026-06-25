@@ -154,34 +154,73 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
     if (groupState.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (groupState.expenses.isEmpty) {
-      return const Center(child: Text('No expenses yet.'));
-    }
-    return ListView.builder(
-      itemCount: groupState.expenses.length,
-      itemBuilder: (context, index) {
-        final expense = groupState.expenses[index];
-        final payer = groupState.members.firstWhere(
-          (m) => m.id == expense.payerId,
-          orElse: () => groupState.members.first,
-        );
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: ListTile(
-            leading: const CircleAvatar(child: Icon(Icons.receipt)),
-            title: Text(expense.description),
-            subtitle: Text('${payer.name} paid ₹${expense.amount.toStringAsFixed(2)}'),
-            trailing: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(expense.category.name.toUpperCase(), style: const TextStyle(fontSize: 10, color: Colors.grey)),
-                Text(expense.splitType.name.toUpperCase(), style: const TextStyle(fontSize: 12)),
-              ],
+    
+    final totalSpent = groupState.expenses
+        .where((e) => e.category != ExpenseCategory.settlement)
+        .fold(0.0, (sum, e) => sum + e.amount);
+
+    final isTrip = groupState.group?.isTripMode ?? false;
+    final budget = groupState.group?.tripBudget;
+
+    return Column(
+      children: [
+        if (isTrip)
+          Card(
+            margin: const EdgeInsets.all(16),
+            color: Colors.blue.shade50,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text('Trip Summary', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Text('Total Spent: ₹${totalSpent.toStringAsFixed(2)}'),
+                  if (budget != null && budget > 0) ...[
+                    const SizedBox(height: 4),
+                    Text('Budget: ₹${budget.toStringAsFixed(2)}'),
+                    const SizedBox(height: 8),
+                    LinearProgressIndicator(
+                      value: (totalSpent / budget).clamp(0.0, 1.0),
+                      backgroundColor: Colors.grey.shade300,
+                      color: totalSpent > budget ? Colors.red : Colors.green,
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
-        );
-      },
+        Expanded(
+          child: groupState.expenses.isEmpty
+              ? const Center(child: Text('No expenses yet.'))
+              : ListView.builder(
+                  itemCount: groupState.expenses.length,
+                  itemBuilder: (context, index) {
+                    final expense = groupState.expenses[index];
+                    final payer = groupState.members.firstWhere(
+                      (m) => m.id == expense.payerId,
+                      orElse: () => groupState.members.first,
+                    );
+                    return Card(
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: ListTile(
+                        leading: const CircleAvatar(child: Icon(Icons.receipt)),
+                        title: Text(expense.description),
+                        subtitle: Text('${payer.name} paid ₹${expense.amount.toStringAsFixed(2)}'),
+                        trailing: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(expense.category.name.toUpperCase(), style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                            Text(expense.splitType.name.toUpperCase(), style: const TextStyle(fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 
