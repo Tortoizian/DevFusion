@@ -153,6 +153,8 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
       children: [
         _buildPendingSettlements(groupState),
         const SizedBox(height: 16),
+        _buildLeaderboard(groupState),
+        const SizedBox(height: 16),
         AppCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -321,6 +323,40 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
           orElse: () => groupState.members.first,
         )
         .name;
+  }
+
+  Widget _buildLeaderboard(GroupState groupState) {
+    final balances = groupState.netBalances.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    if (balances.isEmpty || balances.every((e) => e.value.abs() < 0.01)) {
+      return const SizedBox.shrink();
+    }
+
+    final mostOwed = balances.first;
+    final owesMost = balances.last;
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Leaderboard', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 16),
+          if (mostOwed.value > 0.01)
+            ListTile(
+              leading: const CircleAvatar(child: Text('🏆')),
+              title: Text('${_memberName(groupState, mostOwed.key)} is owed most'),
+              subtitle: Text('₹${mostOwed.value.toStringAsFixed(2)}'),
+            ),
+          if (owesMost.value < -0.01)
+            ListTile(
+              leading: const CircleAvatar(child: Text('💸')),
+              title: Text('${_memberName(groupState, owesMost.key)} owes most'),
+              subtitle: Text('₹${owesMost.value.abs().toStringAsFixed(2)}'),
+            ),
+        ],
+      ),
+    );
   }
 
   Future<void> _showSettleSheet(
