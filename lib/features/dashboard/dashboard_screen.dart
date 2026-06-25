@@ -8,9 +8,17 @@ import 'global_balance_provider.dart';
 import 'widgets/dashboard_empty_state.dart';
 import 'widgets/global_balance_card.dart';
 
-class DashboardScreen extends ConsumerWidget {
+import '../../core/utils/push_notification_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
+  @override
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   String _avatarUrl(String name) {
     return UserModel(
       id: '',
@@ -21,7 +29,21 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final profile = ref.read(currentProfileProvider).valueOrNull;
+      if (profile != null) {
+        await PushNotificationService.initialize(
+          ref.read(databaseRepositoryProvider),
+          profile.id,
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final profile = ref.watch(currentProfileProvider).valueOrNull;
     final displayName = profile?.name ?? 'there';
     final globalBalanceAsync = ref.watch(globalBalanceProvider);
