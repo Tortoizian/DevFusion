@@ -136,6 +136,16 @@ class MockDatabaseRepository implements DatabaseRepository {
   }
 
   @override
+  Future<void> updateFcmToken(String userId, String token) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    final index = _users.indexWhere((u) => u.id == userId);
+    if (index != -1) {
+      final old = _users[index];
+      _users[index] = old.copyWith(fcmToken: token);
+    }
+  }
+
+  @override
   Future<GroupModel> createGroup(
     String name,
     String creatorId, {

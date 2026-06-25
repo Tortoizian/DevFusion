@@ -3,12 +3,14 @@ class UserModel {
   final String name;
   final String upiId;
   final DateTime createdAt;
+  final String? fcmToken;
 
   UserModel({
     required this.id,
     required this.name,
     required this.upiId,
     required this.createdAt,
+    this.fcmToken,
   });
 
   /// Generates the avatar URL using the DiceBear API based on the user's name
@@ -19,6 +21,7 @@ class UserModel {
       id: json['id'] as String,
       name: json['name'] as String,
       upiId: json['upi_id'] as String,
+      fcmToken: json['fcm_token'] as String?,
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at'] as String)
           : DateTime.now(),
@@ -30,6 +33,7 @@ class UserModel {
       'id': id,
       'name': name,
       'upi_id': upiId,
+      if (fcmToken != null) 'fcm_token': fcmToken,
       'created_at': createdAt.toIso8601String(),
     };
   }
@@ -39,12 +43,14 @@ class UserModel {
     String? name,
     String? upiId,
     DateTime? createdAt,
+    String? fcmToken,
   }) {
     return UserModel(
       id: id ?? this.id,
       name: name ?? this.name,
       upiId: upiId ?? this.upiId,
       createdAt: createdAt ?? this.createdAt,
+      fcmToken: fcmToken ?? this.fcmToken,
     );
   }
 

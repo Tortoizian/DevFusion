@@ -69,7 +69,13 @@ class SupabaseDatabaseRepository implements DatabaseRepository {
       'name': user.name,
       'upi_id': user.upiId,
       'avatar_url': user.avatarUrl,
+      if (user.fcmToken != null) 'fcm_token': user.fcmToken,
     });
+  }
+
+  @override
+  Future<void> updateFcmToken(String userId, String token) async {
+    await _client.from('profiles').update({'fcm_token': token}).eq('id', userId);
   }
 
   @override

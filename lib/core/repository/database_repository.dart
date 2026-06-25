@@ -7,6 +7,9 @@ abstract class DatabaseRepository {
   /// Creates a new user profile.
   Future<void> createUserProfile(UserModel user);
 
+  /// Updates the FCM token for a user.
+  Future<void> updateFcmToken(String userId, String token);
+
   /// Creates a new group.
   Future<GroupModel> createGroup(
     String name,
