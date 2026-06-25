@@ -150,6 +150,8 @@ class MockDatabaseRepository implements DatabaseRepository {
     String name,
     String creatorId, {
     GroupCategory category = GroupCategory.other,
+    bool isTripMode = false,
+    double? tripBudget,
   }) async {
     await Future.delayed(const Duration(milliseconds: 300));
     final inviteCode = InviteCodeGenerator.generate();
@@ -159,6 +161,8 @@ class MockDatabaseRepository implements DatabaseRepository {
       inviteCode: inviteCode,
       createdBy: creatorId,
       createdAt: DateTime.now(),
+      isTripMode: isTripMode,
+      tripBudget: tripBudget,
     );
     _groups.add(group);
 

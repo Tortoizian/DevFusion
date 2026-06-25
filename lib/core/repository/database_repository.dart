@@ -15,6 +15,8 @@ abstract class DatabaseRepository {
     String name,
     String creatorId, {
     GroupCategory category = GroupCategory.other,
+    bool isTripMode = false,
+    double? tripBudget,
   });
 
   /// Joins a group using an invite code.

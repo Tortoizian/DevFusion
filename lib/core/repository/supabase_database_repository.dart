@@ -83,6 +83,8 @@ class SupabaseDatabaseRepository implements DatabaseRepository {
     String name,
     String creatorId, {
     GroupCategory category = GroupCategory.other,
+    bool isTripMode = false,
+    double? tripBudget,
   }) async {
     PostgrestException? lastError;
 
@@ -96,6 +98,8 @@ class SupabaseDatabaseRepository implements DatabaseRepository {
               'invite_code': inviteCode,
               'created_by': creatorId,
               'category': category.name,
+              'is_trip_mode': isTripMode,
+              if (tripBudget != null) 'trip_budget': tripBudget,
             })
             .select()
             .single();
