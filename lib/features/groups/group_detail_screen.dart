@@ -15,6 +15,7 @@ import 'widgets/debt_graph_widget.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:confetti/confetti.dart';
 import '../../core/models/expense_model.dart';
+import '../../core/utils/export_service.dart';
 
 class GroupDetailScreen extends ConsumerStatefulWidget {
   final String groupId;
@@ -77,6 +78,19 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                 }).toList(),
               ),
             ),
+          PopupMenuButton<String>(
+            onSelected: (value) async {
+              if (value == 'pdf') {
+                await ExportService.exportToPdf(groupState);
+              } else if (value == 'csv') {
+                await ExportService.exportToCsv(groupState);
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'pdf', child: Text('Export PDF')),
+              const PopupMenuItem(value: 'csv', child: Text('Export CSV')),
+            ],
+          ),
         ],
       ),
       body: _buildBody(),

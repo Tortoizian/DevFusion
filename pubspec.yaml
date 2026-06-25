@@ -48,6 +48,9 @@ dependencies:
   fl_chart: ^1.2.0
   confetti: ^0.8.0
   image_picker: ^1.2.2
+  pdf: ^3.13.0
+  path_provider: ^2.1.6
+  csv: ^8.0.0
 
 dev_dependencies:
   flutter_test:
