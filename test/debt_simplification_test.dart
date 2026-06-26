@@ -102,5 +102,34 @@ void main() {
 
       expect(transfers.isEmpty, true);
     });
+
+    test('Preserves total debt through simplification', () {
+      final netBalances = {
+        'user_a': 123.45,
+        'user_b': -50.0,
+        'user_c': -73.45,
+      };
+
+      final transfers = DebtSimplificationEngine.simplifyDebts(netBalances);
+      final totalCredit = netBalances.values.where((value) => value > 0).fold<double>(0, (sum, value) => sum + value);
+      final totalTransferred = transfers.fold<double>(0, (sum, transfer) => sum + transfer.amount);
+
+      expect(totalTransferred, closeTo(totalCredit, 0.01));
+      expect(transfers.every((transfer) => transfer.amount >= 0.01), true);
+    });
+
+    test('Bidirectional debts collapse to a single net transfer', () {
+      final netBalances = {
+        'user_a': -60.0,
+        'user_b': 60.0,
+      };
+
+      final transfers = DebtSimplificationEngine.simplifyDebts(netBalances);
+
+      expect(transfers.length, 1);
+      expect(transfers.first.fromUserId, 'user_a');
+      expect(transfers.first.toUserId, 'user_b');
+      expect(transfers.first.amount, 60.0);
+    });
   });
 }
