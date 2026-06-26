@@ -34,49 +34,37 @@ class GroupStateNotifier extends StateNotifier<GroupState> {
     // Clean up any existing listeners
     await _cancelSubscriptions();
 
-    state = state.copyWith(
+    state = GroupState(
       groupId: groupId,
       isLoading: true,
-      errorMessage: null,
-      members: [],
-      expenses: [],
-      splits: [],
-      settlements: [],
     );
 
     try {
-      // 1. Fetch group members first (static query)
+      final group = await _repository.fetchGroup(groupId);
       final members = await _repository.fetchGroupMembers(groupId);
-      state = state.copyWith(members: members);
-
-      // 2. Set up real-time stream listeners
+      state = state.copyWith(group: group, members: members);
       _expenseSub = _repository.streamExpenses(groupId).listen(
-        (expenses) {
-          state = state.copyWith(expenses: expenses);
-        },
+        (_) => unawaited(_syncGroupData()),
         onError: (e) {
           state = state.copyWith(errorMessage: 'Real-time expenses sync error: $e');
         },
       );
 
       _splitsSub = _repository.streamSplits(groupId).listen(
-        (splits) {
-          state = state.copyWith(splits: splits);
-        },
+        (_) => unawaited(_syncGroupData()),
         onError: (e) {
           state = state.copyWith(errorMessage: 'Real-time splits sync error: $e');
         },
       );
 
       _settlementsSub = _repository.streamSettlements(groupId).listen(
-        (settlements) {
-          state = state.copyWith(settlements: settlements);
-        },
+        (_) => unawaited(_syncGroupData()),
         onError: (e) {
           state = state.copyWith(errorMessage: 'Real-time settlements sync error: $e');
         },
       );
 
+      await _syncGroupData();
       state = state.copyWith(isLoading: false);
     } catch (e) {
       state = state.copyWith(
@@ -94,6 +82,7 @@ class GroupStateNotifier extends StateNotifier<GroupState> {
     required ExpenseCategory category,
     required SplitType splitType,
     required Map<String, double> userOwedAmounts,
+    String? imagePath,
   }) async {
     final groupId = state.groupId;
     if (groupId == null) {
@@ -110,7 +99,9 @@ class GroupStateNotifier extends StateNotifier<GroupState> {
         category: category,
         splitType: splitType,
         userOwedAmounts: userOwedAmounts,
+        imagePath: imagePath,
       );
+      await _syncGroupData();
     } catch (e) {
       state = state.copyWith(errorMessage: 'Failed to log expense: $e');
       rethrow;
@@ -136,8 +127,12 @@ class GroupStateNotifier extends StateNotifier<GroupState> {
         creditorId: creditorId,
         amount: amount,
       );
+      await _syncGroupData();
     } catch (e) {
-      state = state.copyWith(errorMessage: 'Failed to initiate settlement: $e');
+      final message = e is StateError
+          ? e.message
+          : 'Failed to initiate settlement: $e';
+      state = state.copyWith(errorMessage: message);
       rethrow;
     }
   }
@@ -146,10 +141,26 @@ class GroupStateNotifier extends StateNotifier<GroupState> {
   Future<void> confirmSettlement(String settlementId) async {
     try {
       await _repository.confirmSettlement(settlementId);
+      await _syncGroupData();
     } catch (e) {
       state = state.copyWith(errorMessage: 'Failed to confirm settlement: $e');
       rethrow;
     }
+  }
+
+  Future<void> _syncGroupData() async {
+    final groupId = state.groupId;
+    if (groupId == null) return;
+
+    final expenses = await _repository.fetchExpensesForGroup(groupId);
+    final splits = await _repository.fetchSplitsForGroup(groupId);
+    final settlements = await _repository.fetchSettlementsForGroup(groupId);
+
+    state = state.copyWith(
+      expenses: expenses,
+      splits: splits,
+      settlements: settlements,
+    );
   }
 
   /// Helper to cancel all active stream subscriptions

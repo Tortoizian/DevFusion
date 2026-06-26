@@ -21,13 +21,16 @@ class CreateGroupScreen extends ConsumerStatefulWidget {
 class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _budgetController = TextEditingController();
   GroupCategory _category = GroupCategory.other;
+  bool _isTripMode = false;
   bool _isLoading = false;
   GroupModel? _createdGroup;
 
   @override
   void dispose() {
     _nameController.dispose();
+    _budgetController.dispose();
     super.dispose();
   }
 
@@ -48,9 +51,11 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
             _nameController.text.trim(),
             userId,
             category: _category,
+            isTripMode: _isTripMode,
+            tripBudget: _isTripMode ? double.tryParse(_budgetController.text) : null,
           );
 
-      ref.invalidate(userGroupsProvider);
+      ref.invalidate(userGroupSummariesProvider);
       ref.invalidate(globalBalanceProvider);
 
       setState(() => _createdGroup = group);
@@ -140,6 +145,25 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                 if (value != null) setState(() => _category = value);
               },
             ),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              title: const Text('Trip Mode'),
+              subtitle: const Text('Enable special trip summary and budget features'),
+              value: _isTripMode,
+              onChanged: (val) => setState(() => _isTripMode = val),
+              contentPadding: EdgeInsets.zero,
+            ),
+            if (_isTripMode) ...[
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _budgetController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Trip Budget (optional)',
+                  hintText: '50000',
+                ),
+              ),
+            ],
             const SizedBox(height: 32),
             AppButton(
               label: 'Create Group',
@@ -236,9 +260,17 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
           ),
         ),
         Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+          child: AppButton(
+            label: 'Open Group',
+            onPressed: () => context.go('/groups/${group.id}'),
+          ),
+        ),
+        Padding(
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
           child: AppButton(
             label: 'Back to Dashboard',
+            isOutlined: true,
             onPressed: () => context.go('/dashboard'),
           ),
         ),

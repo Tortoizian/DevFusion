@@ -7,10 +7,19 @@ import '../../shared/widgets/app_button.dart';
 import 'global_balance_provider.dart';
 import 'widgets/dashboard_empty_state.dart';
 import 'widgets/global_balance_card.dart';
+import 'widgets/group_list_section.dart';
 
-class DashboardScreen extends ConsumerWidget {
+import '../../core/state/group_state_notifier.dart';
+import '../../core/utils/push_notification_service.dart';
+
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
+  @override
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> with WidgetsBindingObserver {
   String _avatarUrl(String name) {
     return UserModel(
       id: '',
@@ -21,12 +30,45 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final profile = ref.read(currentProfileProvider).valueOrNull;
+      if (profile != null) {
+        await PushNotificationService.initialize(
+          ref.read(databaseRepositoryProvider),
+          profile.id,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      refreshDashboardBalances(ref);
+    }
+  }
+
+  Future<void> _onRefresh() async {
+    refreshDashboardBalances(ref);
+    await ref.read(userGroupSummariesProvider.future);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final profile = ref.watch(currentProfileProvider).valueOrNull;
     final displayName = profile?.name ?? 'there';
     final globalBalanceAsync = ref.watch(globalBalanceProvider);
-    final userGroupsAsync = ref.watch(userGroupsProvider);
-    final hasGroups = userGroupsAsync.valueOrNull?.isNotEmpty ?? false;
+    final groupSummariesAsync = ref.watch(userGroupSummariesProvider);
+    final hasGroups = groupSummariesAsync.valueOrNull?.isNotEmpty ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -42,9 +84,12 @@ class DashboardScreen extends ConsumerWidget {
         ],
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
+        child: RefreshIndicator(
+          onRefresh: _onRefresh,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            children: [
             Text(
               'Hey, $displayName',
               style: Theme.of(context).textTheme.titleMedium,
@@ -55,7 +100,33 @@ class DashboardScreen extends ConsumerWidget {
               loading: () => const GlobalBalanceCard(netBalance: 0),
               error: (_, __) => const GlobalBalanceCard(netBalance: 0),
             ),
-            if (!hasGroups && !userGroupsAsync.isLoading) const DashboardEmptyState(),
+            const SizedBox(height: 16),
+            groupSummariesAsync.when(
+              data: (summaries) {
+                if (summaries.isEmpty) {
+                  return const DashboardEmptyState();
+                }
+
+                return GroupListSection(
+                  groups: summaries.map((summary) => summary.group).toList(),
+                  balancesByGroupId: {
+                    for (final summary in summaries) summary.group.id: summary.netBalance,
+                  },
+                );
+              },
+              loading: () => const Padding(
+                padding: EdgeInsets.symmetric(vertical: 32),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (error, _) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Text(
+                  'Could not load your groups. Pull to refresh or try again.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            ),
+            if (hasGroups) const SizedBox(height: 8),
             AppButton(
               label: 'Create Group',
               onPressed: () => context.push('/groups/create'),
@@ -67,6 +138,7 @@ class DashboardScreen extends ConsumerWidget {
               onPressed: () => context.push('/groups/join'),
             ),
           ],
+        ),
         ),
       ),
     );

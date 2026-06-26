@@ -15,8 +15,9 @@ void main() {
     );
     addTearDown(container.dispose);
 
-    final balance = await container.read(globalBalanceProvider.future);
-    expect(balance, 750.0);
+    final balance = await container.read(userGroupSummariesProvider.future);
+    final total = balance.fold<double>(0.0, (sum, summary) => sum + summary.netBalance);
+    expect(total, 750.0);
   });
 
   test('globalBalanceProvider returns zero when user has no groups', () async {
@@ -28,7 +29,8 @@ void main() {
     );
     addTearDown(container.dispose);
 
-    final balance = await container.read(globalBalanceProvider.future);
-    expect(balance, 0.0);
+    final summaries = await container.read(userGroupSummariesProvider.future);
+    final total = summaries.fold<double>(0.0, (sum, summary) => sum + summary.netBalance);
+    expect(total, 0.0);
   });
 }

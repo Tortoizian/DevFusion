@@ -3,6 +3,7 @@ import '../algorithms/debt_simplification.dart';
 
 class GroupState {
   final String? groupId;
+  final GroupModel? group;
   final List<UserModel> members;
   final List<ExpenseModel> expenses;
   final List<ExpenseSplitModel> splits;
@@ -12,6 +13,7 @@ class GroupState {
 
   GroupState({
     this.groupId,
+    this.group,
     this.members = const [],
     this.expenses = const [],
     this.splits = const [],
@@ -22,6 +24,7 @@ class GroupState {
 
   GroupState copyWith({
     String? groupId,
+    GroupModel? group,
     List<UserModel>? members,
     List<ExpenseModel>? expenses,
     List<ExpenseSplitModel>? splits,
@@ -31,6 +34,7 @@ class GroupState {
   }) {
     return GroupState(
       groupId: groupId ?? this.groupId,
+      group: group ?? this.group,
       members: members ?? this.members,
       expenses: expenses ?? this.expenses,
       splits: splits ?? this.splits,
@@ -100,6 +104,6 @@ class GroupState {
 
   @override
   String toString() {
-    return 'GroupState(groupId: $groupId, membersCount: ${members.length}, expensesCount: ${expenses.length}, splitsCount: ${splits.length}, settlementsCount: ${settlements.length})';
+    return 'GroupState(groupId: $groupId, group: ${group?.name}, membersCount: ${members.length}, expensesCount: ${expenses.length}, splitsCount: ${splits.length}, settlementsCount: ${settlements.length})';
   }
 }

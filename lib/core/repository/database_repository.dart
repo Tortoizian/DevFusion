@@ -7,21 +7,32 @@ abstract class DatabaseRepository {
   /// Creates a new user profile.
   Future<void> createUserProfile(UserModel user);
 
+  /// Updates the FCM token for a user.
+  Future<void> updateFcmToken(String userId, String token);
+
   /// Creates a new group.
   Future<GroupModel> createGroup(
     String name,
     String creatorId, {
     GroupCategory category = GroupCategory.other,
+    bool isTripMode = false,
+    double? tripBudget,
   });
 
-  /// Joins a group using an invite code.
-  Future<void> joinGroupWithCode(String inviteCode, String userId);
+  /// Joins a group using an invite code. Returns the joined group's id.
+  Future<String> joinGroupWithCode(String inviteCode, String userId);
 
   /// Fetches all members of a specific group.
   Future<List<UserModel>> fetchGroupMembers(String groupId);
 
+  /// Fetches a single group by id.
+  Future<GroupModel> fetchGroup(String groupId);
+
   /// Fetches all groups the user belongs to.
   Future<List<GroupModel>> fetchUserGroups(String userId);
+
+  /// Emits when expenses or settlements may have changed for the user's groups.
+  Stream<void> watchUserGroupsActivity(String userId);
 
   /// One-shot fetch of a group's expenses (for balance calculations).
   Future<List<ExpenseModel>> fetchExpensesForGroup(String groupId);
@@ -50,6 +61,7 @@ abstract class DatabaseRepository {
     required ExpenseCategory category,
     required SplitType splitType,
     required Map<String, double> userOwedAmounts, // Map of userId -> amount owed
+    String? imagePath,
   });
 
   /// Logs a settlement transaction (initially in 'pending' status).

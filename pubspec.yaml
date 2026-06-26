@@ -43,6 +43,17 @@ dependencies:
   qr_flutter: ^4.1.0
   mobile_scanner: ^7.2.0
   share_plus: ^13.1.0
+  shared_preferences: ^2.5.5
+  url_launcher: ^6.3.1
+  fl_chart: ^1.2.0
+  confetti: ^0.8.0
+  image_picker: ^1.2.2
+  pdf: ^3.13.0
+  path_provider: ^2.1.6
+  csv: ^8.0.0
+  firebase_core: ^4.11.0
+  firebase_messaging: ^16.4.1
+  google_mlkit_text_recognition: ^0.15.1
 
 dev_dependencies:
   flutter_test:
@@ -54,6 +65,14 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/app_icon.png
+  adaptive_icon_background: "#0D9488"
+  adaptive_icon_foreground: assets/app_icon.png
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

@@ -19,6 +19,7 @@ class MockDatabaseRepository implements DatabaseRepository {
   final Map<String, StreamController<List<ExpenseModel>>> _expenseControllers = {};
   final Map<String, StreamController<List<ExpenseSplitModel>>> _splitsControllers = {};
   final Map<String, StreamController<List<SettlementModel>>> _settlementsControllers = {};
+  final StreamController<void> _activityController = StreamController<void>.broadcast();
 
   MockDatabaseRepository() {
     _insertSeedData();
@@ -104,6 +105,9 @@ class MockDatabaseRepository implements DatabaseRepository {
     if (_settlementsControllers.containsKey(groupId)) {
       _settlementsControllers[groupId]!.add(_getSettlementsForGroup(groupId));
     }
+    if (!_activityController.isClosed) {
+      _activityController.add(null);
+    }
   }
 
   List<ExpenseModel> _getExpensesForGroup(String groupId) {
@@ -136,10 +140,22 @@ class MockDatabaseRepository implements DatabaseRepository {
   }
 
   @override
+  Future<void> updateFcmToken(String userId, String token) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    final index = _users.indexWhere((u) => u.id == userId);
+    if (index != -1) {
+      final old = _users[index];
+      _users[index] = old.copyWith(fcmToken: token);
+    }
+  }
+
+  @override
   Future<GroupModel> createGroup(
     String name,
     String creatorId, {
     GroupCategory category = GroupCategory.other,
+    bool isTripMode = false,
+    double? tripBudget,
   }) async {
     await Future.delayed(const Duration(milliseconds: 300));
     final inviteCode = InviteCodeGenerator.generate();
@@ -149,6 +165,8 @@ class MockDatabaseRepository implements DatabaseRepository {
       inviteCode: inviteCode,
       createdBy: creatorId,
       createdAt: DateTime.now(),
+      isTripMode: isTripMode,
+      tripBudget: tripBudget,
     );
     _groups.add(group);
 
@@ -163,7 +181,7 @@ class MockDatabaseRepository implements DatabaseRepository {
   }
 
   @override
-  Future<void> joinGroupWithCode(String inviteCode, String userId) async {
+  Future<String> joinGroupWithCode(String inviteCode, String userId) async {
     await Future.delayed(const Duration(milliseconds: 300));
     final group = _groups.firstWhere(
       (g) => g.inviteCode.toUpperCase() == inviteCode.toUpperCase(),
@@ -179,6 +197,17 @@ class MockDatabaseRepository implements DatabaseRepository {
         joinedAt: DateTime.now(),
       ));
     }
+
+    return group.id;
+  }
+
+  @override
+  Future<GroupModel> fetchGroup(String groupId) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    return _groups.firstWhere(
+      (group) => group.id == groupId,
+      orElse: () => throw StateError('Group not found: $groupId'),
+    );
   }
 
   @override
@@ -220,6 +249,11 @@ class MockDatabaseRepository implements DatabaseRepository {
   }
 
   @override
+  Stream<void> watchUserGroupsActivity(String userId) {
+    return _activityController.stream;
+  }
+
+  @override
   Stream<List<ExpenseModel>> streamExpenses(String groupId) {
     return _getController(groupId, _expenseControllers, _getExpensesForGroup).stream;
   }
@@ -243,6 +277,7 @@ class MockDatabaseRepository implements DatabaseRepository {
     required ExpenseCategory category,
     required SplitType splitType,
     required Map<String, double> userOwedAmounts,
+    String? imagePath,
   }) async {
     await Future.delayed(const Duration(milliseconds: 300));
     final expenseId = _uuid.v4();
@@ -255,6 +290,7 @@ class MockDatabaseRepository implements DatabaseRepository {
       category: category,
       splitType: splitType,
       createdAt: DateTime.now(),
+      receiptUrl: imagePath,
     );
 
     _expenses.add(expense);

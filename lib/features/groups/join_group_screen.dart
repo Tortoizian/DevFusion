@@ -38,19 +38,19 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await ref.read(databaseRepositoryProvider).joinGroupWithCode(
+      final groupId = await ref.read(databaseRepositoryProvider).joinGroupWithCode(
             _codeController.text.trim(),
             userId,
           );
 
-      ref.invalidate(userGroupsProvider);
+      ref.invalidate(userGroupSummariesProvider);
       ref.invalidate(globalBalanceProvider);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Joined group successfully')),
         );
-        context.go('/dashboard');
+        context.go('/groups/$groupId');
       }
     } catch (e) {
       if (mounted) {
@@ -113,11 +113,7 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
                 ),
                 const SizedBox(height: 16),
                 TextButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('QR scanning will be available soon')),
-                    );
-                  },
+                  onPressed: () => context.push('/groups/join/scan'),
                   child: const Text('Scan QR instead'),
                 ),
               ],

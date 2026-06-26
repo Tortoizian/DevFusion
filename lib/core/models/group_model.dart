@@ -24,6 +24,8 @@ class GroupModel {
   final String inviteCode;
   final String createdBy;
   final DateTime createdAt;
+  final bool isTripMode;
+  final double? tripBudget;
 
   GroupModel({
     required this.id,
@@ -31,6 +33,8 @@ class GroupModel {
     required this.inviteCode,
     required this.createdBy,
     required this.createdAt,
+    this.isTripMode = false,
+    this.tripBudget,
   });
 
   factory GroupModel.fromJson(Map<String, dynamic> json) {
@@ -42,6 +46,12 @@ class GroupModel {
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at'] as String)
           : DateTime.now(),
+      isTripMode: json['is_trip_mode'] as bool? ?? false,
+      tripBudget: json['trip_budget'] != null
+          ? (json['trip_budget'] as num).toDouble()
+          : json['budget'] != null
+              ? (json['budget'] as num).toDouble()
+              : null,
     );
   }
 
@@ -52,6 +62,8 @@ class GroupModel {
       'invite_code': inviteCode,
       'created_by': createdBy,
       'created_at': createdAt.toIso8601String(),
+      'is_trip_mode': isTripMode,
+      if (tripBudget != null) 'trip_budget': tripBudget,
     };
   }
 
@@ -61,6 +73,8 @@ class GroupModel {
     String? inviteCode,
     String? createdBy,
     DateTime? createdAt,
+    bool? isTripMode,
+    double? tripBudget,
   }) {
     return GroupModel(
       id: id ?? this.id,
@@ -68,6 +82,8 @@ class GroupModel {
       inviteCode: inviteCode ?? this.inviteCode,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
+      isTripMode: isTripMode ?? this.isTripMode,
+      tripBudget: tripBudget ?? this.tripBudget,
     );
   }
 
