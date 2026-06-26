@@ -55,7 +55,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
             tripBudget: _isTripMode ? double.tryParse(_budgetController.text) : null,
           );
 
-      ref.invalidate(userGroupsProvider);
+      ref.invalidate(userGroupSummariesProvider);
       ref.invalidate(globalBalanceProvider);
 
       setState(() => _createdGroup = group);
@@ -260,9 +260,17 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
           ),
         ),
         Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+          child: AppButton(
+            label: 'Open Group',
+            onPressed: () => context.go('/groups/${group.id}'),
+          ),
+        ),
+        Padding(
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
           child: AppButton(
             label: 'Back to Dashboard',
+            isOutlined: true,
             onPressed: () => context.go('/dashboard'),
           ),
         ),

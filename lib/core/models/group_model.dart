@@ -47,7 +47,11 @@ class GroupModel {
           ? DateTime.parse(json['created_at'] as String)
           : DateTime.now(),
       isTripMode: json['is_trip_mode'] as bool? ?? false,
-      tripBudget: json['trip_budget'] != null ? (json['trip_budget'] as num).toDouble() : null,
+      tripBudget: json['trip_budget'] != null
+          ? (json['trip_budget'] as num).toDouble()
+          : json['budget'] != null
+              ? (json['budget'] as num).toDouble()
+              : null,
     );
   }
 

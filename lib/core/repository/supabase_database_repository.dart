@@ -19,16 +19,20 @@ class SupabaseDatabaseRepository implements DatabaseRepository {
 
   @override
   Future<List<GroupModel>> fetchUserGroups(String userId) async {
-    final rows = await _client
+    final memberRows = await _client
         .from('group_members')
-        .select('groups(*)')
+        .select('group_id')
         .eq('user_id', userId);
 
-    return rows
-        .map((row) => row['groups'])
-        .whereType<Map<String, dynamic>>()
-        .map(GroupModel.fromJson)
+    final groupIds = memberRows
+        .map((row) => row['group_id'] as String)
         .toList();
+
+    if (groupIds.isEmpty) return [];
+
+    final groupRows = await _client.from('groups').select().inFilter('id', groupIds);
+
+    return groupRows.map((row) => GroupModel.fromJson(row)).toList();
   }
 
   @override
@@ -99,7 +103,7 @@ class SupabaseDatabaseRepository implements DatabaseRepository {
               'created_by': creatorId,
               'category': category.name,
               'is_trip_mode': isTripMode,
-              if (tripBudget != null) 'trip_budget': tripBudget,
+              if (tripBudget != null) 'budget': tripBudget,
             })
             .select()
             .single();
@@ -121,15 +125,17 @@ class SupabaseDatabaseRepository implements DatabaseRepository {
   }
 
   @override
-  Future<void> joinGroupWithCode(String inviteCode, String userId) async {
+  Future<String> joinGroupWithCode(String inviteCode, String userId) async {
     final sessionUserId = _client.auth.currentUser?.id;
     if (sessionUserId == null || sessionUserId != userId) {
       throw StateError('Not authenticated');
     }
 
-    await _client.rpc('join_group_by_invite_code', params: {
+    final groupId = await _client.rpc('join_group_by_invite_code', params: {
       'code': inviteCode.trim().toUpperCase(),
     });
+
+    return groupId as String;
   }
 
   @override

@@ -38,19 +38,19 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await ref.read(databaseRepositoryProvider).joinGroupWithCode(
+      final groupId = await ref.read(databaseRepositoryProvider).joinGroupWithCode(
             _codeController.text.trim(),
             userId,
           );
 
-      ref.invalidate(userGroupsProvider);
+      ref.invalidate(userGroupSummariesProvider);
       ref.invalidate(globalBalanceProvider);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Joined group successfully')),
         );
-        context.go('/dashboard');
+        context.go('/groups/$groupId');
       }
     } catch (e) {
       if (mounted) {

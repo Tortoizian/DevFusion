@@ -57,16 +57,16 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> {
     await _controller.stop();
 
     try {
-      await ref.read(databaseRepositoryProvider).joinGroupWithCode(code, userId);
+      final groupId = await ref.read(databaseRepositoryProvider).joinGroupWithCode(code, userId);
 
-      ref.invalidate(userGroupsProvider);
+      ref.invalidate(userGroupSummariesProvider);
       ref.invalidate(globalBalanceProvider);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Joined group successfully')),
         );
-        context.go('/dashboard');
+        context.go('/groups/$groupId');
       }
     } catch (_) {
       if (mounted) {

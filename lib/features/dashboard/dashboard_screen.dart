@@ -7,6 +7,7 @@ import '../../shared/widgets/app_button.dart';
 import 'global_balance_provider.dart';
 import 'widgets/dashboard_empty_state.dart';
 import 'widgets/global_balance_card.dart';
+import 'widgets/group_list_section.dart';
 
 import '../../core/state/group_state_notifier.dart';
 import '../../core/utils/push_notification_service.dart';
@@ -47,8 +48,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final profile = ref.watch(currentProfileProvider).valueOrNull;
     final displayName = profile?.name ?? 'there';
     final globalBalanceAsync = ref.watch(globalBalanceProvider);
-    final userGroupsAsync = ref.watch(userGroupsProvider);
-    final hasGroups = userGroupsAsync.valueOrNull?.isNotEmpty ?? false;
+    final groupSummariesAsync = ref.watch(userGroupSummariesProvider);
+    final hasGroups = groupSummariesAsync.valueOrNull?.isNotEmpty ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -77,7 +78,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               loading: () => const GlobalBalanceCard(netBalance: 0),
               error: (_, __) => const GlobalBalanceCard(netBalance: 0),
             ),
-            if (!hasGroups && !userGroupsAsync.isLoading) const DashboardEmptyState(),
+            const SizedBox(height: 16),
+            groupSummariesAsync.when(
+              data: (summaries) {
+                if (summaries.isEmpty) {
+                  return const DashboardEmptyState();
+                }
+
+                return GroupListSection(
+                  groups: summaries.map((summary) => summary.group).toList(),
+                  balancesByGroupId: {
+                    for (final summary in summaries) summary.group.id: summary.netBalance,
+                  },
+                );
+              },
+              loading: () => const Padding(
+                padding: EdgeInsets.symmetric(vertical: 32),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (error, _) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Text(
+                  'Could not load your groups. Pull to refresh or try again.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            ),
+            if (hasGroups) const SizedBox(height: 8),
             AppButton(
               label: 'Create Group',
               onPressed: () => context.push('/groups/create'),

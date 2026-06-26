@@ -177,7 +177,7 @@ class MockDatabaseRepository implements DatabaseRepository {
   }
 
   @override
-  Future<void> joinGroupWithCode(String inviteCode, String userId) async {
+  Future<String> joinGroupWithCode(String inviteCode, String userId) async {
     await Future.delayed(const Duration(milliseconds: 300));
     final group = _groups.firstWhere(
       (g) => g.inviteCode.toUpperCase() == inviteCode.toUpperCase(),
@@ -193,6 +193,8 @@ class MockDatabaseRepository implements DatabaseRepository {
         joinedAt: DateTime.now(),
       ));
     }
+
+    return group.id;
   }
 
   @override

@@ -19,8 +19,8 @@ abstract class DatabaseRepository {
     double? tripBudget,
   });
 
-  /// Joins a group using an invite code.
-  Future<void> joinGroupWithCode(String inviteCode, String userId);
+  /// Joins a group using an invite code. Returns the joined group's id.
+  Future<String> joinGroupWithCode(String inviteCode, String userId);
 
   /// Fetches all members of a specific group.
   Future<List<UserModel>> fetchGroupMembers(String groupId);
