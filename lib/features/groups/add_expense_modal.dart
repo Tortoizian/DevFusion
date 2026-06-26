@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/auth/auth_provider.dart';
 import '../../core/models/expense_model.dart';
+import '../../core/models/user_model.dart';
 import '../../core/state/group_state_notifier.dart';
 import '../../core/utils/category_classifier.dart';
 import '../../core/utils/ocr_scanner_service.dart';
@@ -86,13 +88,14 @@ class _AddExpenseModalState extends ConsumerState<AddExpenseModal> {
     setState(() => _isSaving = true);
     try {
       final amount = double.tryParse(_amountController.text) ?? 0.0;
-      if (amount <= 0 || _descController.text.isEmpty || _selectedPayerId == null) {
+      final members = ref.read(groupStateNotifierProvider).members;
+      final payerId = _selectedPayerId ?? _defaultPayerId(members, ref.read(currentUserIdProvider));
+      if (amount <= 0 || _descController.text.isEmpty || payerId == null) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all fields')));
         setState(() => _isSaving = false);
         return;
       }
 
-    final members = ref.read(groupStateNotifierProvider).members;
     final Map<String, double> splitAmounts = {};
 
     if (_splitType == 'equal') {
@@ -167,7 +170,7 @@ class _AddExpenseModalState extends ConsumerState<AddExpenseModal> {
     await ref.read(groupStateNotifierProvider.notifier).addExpense(
       description: _descController.text,
       amount: amount,
-      payerId: _selectedPayerId!,
+      payerId: payerId,
       category: _selectedCategory,
       splitType: SplitType.fromString(_splitType),
       userOwedAmounts: splitAmounts,
@@ -182,12 +185,19 @@ class _AddExpenseModalState extends ConsumerState<AddExpenseModal> {
     }
   }
 
+  String? _defaultPayerId(List<UserModel> members, String? currentUserId) {
+    if (members.isEmpty) return null;
+    if (currentUserId != null && members.any((member) => member.id == currentUserId)) {
+      return currentUserId;
+    }
+    return members.first.id;
+  }
+
   @override
   Widget build(BuildContext context) {
     final groupState = ref.watch(groupStateNotifierProvider);
-    if (_selectedPayerId == null && groupState.members.isNotEmpty) {
-      _selectedPayerId = groupState.members.first.id;
-    }
+    final currentUserId = ref.watch(currentUserIdProvider);
+    final payerId = _selectedPayerId ?? _defaultPayerId(groupState.members, currentUserId);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -227,7 +237,7 @@ class _AddExpenseModalState extends ConsumerState<AddExpenseModal> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: _selectedPayerId,
+              value: payerId,
               items: groupState.members.map((m) {
                 return DropdownMenuItem(value: m.id, child: Text(m.name));
               }).toList(),
