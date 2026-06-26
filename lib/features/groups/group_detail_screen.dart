@@ -63,7 +63,10 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
       children: [
         Scaffold(
           appBar: AppBar(
-        title: Text(groupState.groupId != null ? 'Group Details' : 'Loading...'),
+        title: Text(
+          groupState.group?.name ??
+              (groupState.isLoading ? 'Loading...' : 'Group'),
+        ),
         actions: [
           if (groupState.members.isNotEmpty)
             Padding(
@@ -92,7 +95,9 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
           ),
         ],
       ),
-      body: _buildBody(),
+      body: groupState.errorMessage != null && !groupState.isLoading
+          ? Center(child: Text(groupState.errorMessage!))
+          : _buildBody(),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) {
@@ -149,7 +154,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
     }
   }
 
-  Widget _buildExpensesTab(groupState) {
+  Widget _buildExpensesTab(GroupState groupState) {
     if (groupState.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -196,16 +201,12 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                   itemCount: groupState.expenses.length,
                   itemBuilder: (context, index) {
                     final expense = groupState.expenses[index];
-                    final payer = groupState.members.firstWhere(
-                      (m) => m.id == expense.payerId,
-                      orElse: () => groupState.members.first,
-                    );
                     return Card(
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       child: ListTile(
                         leading: const CircleAvatar(child: Icon(Icons.receipt)),
                         title: Text(expense.description),
-                        subtitle: Text('${payer.name} paid ₹${expense.amount.toStringAsFixed(2)}'),
+                        subtitle: Text('${_memberName(groupState, expense.payerId)} paid ₹${expense.amount.toStringAsFixed(2)}'),
                         trailing: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.end,
@@ -401,12 +402,10 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
   }
 
   String _memberName(GroupState groupState, String userId) {
-    return groupState.members
-        .firstWhere(
-          (member) => member.id == userId,
-          orElse: () => groupState.members.first,
-        )
-        .name;
+    for (final member in groupState.members) {
+      if (member.id == userId) return member.name;
+    }
+    return 'Unknown';
   }
 
   Widget _buildLeaderboard(GroupState groupState) {
@@ -461,20 +460,20 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
           amount: amount,
           debtorName: debtorName,
           creditorName: creditorName,
-          groupName: groupState.groupId ?? 'group',
+          groupName: groupState.group?.name ?? groupState.groupId ?? 'group',
           expenseCount: groupState.expenses.length,
         );
       },
     );
   }
 
-  Widget _buildHistoryTab(groupState) {
+  Widget _buildHistoryTab(GroupState groupState) {
     if (groupState.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
     final sortedExpenses = List<ExpenseModel>.from(groupState.expenses)
-      ..sort((a, b) => b.createdAt!.compareTo(a.createdAt!));
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     final filtered = sortedExpenses.where((e) {
       if (_historyFilterCategory != null && e.category != _historyFilterCategory) return false;
@@ -512,18 +511,14 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
                     final expense = filtered[index];
-                    final payer = groupState.members.firstWhere(
-                      (m) => m.id == expense.payerId,
-                      orElse: () => groupState.members.first,
-                    );
                     return Card(
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       child: ListTile(
                         leading: const CircleAvatar(child: Icon(Icons.history)),
                         title: Text(expense.description),
-                        subtitle: Text('${payer.name} paid ₹${expense.amount.toStringAsFixed(2)}'),
+                        subtitle: Text('${_memberName(groupState, expense.payerId)} paid ₹${expense.amount.toStringAsFixed(2)}'),
                         trailing: Text(
-                          expense.createdAt?.toString().split(' ')[0] ?? '',
+                          expense.createdAt.toString().split(' ')[0],
                           style: const TextStyle(fontSize: 12),
                         ),
                       ),

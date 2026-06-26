@@ -53,6 +53,12 @@ class SupabaseDatabaseRepository implements DatabaseRepository {
   }
 
   @override
+  Future<GroupModel> fetchGroup(String groupId) async {
+    final data = await _client.from('groups').select().eq('id', groupId).single();
+    return GroupModel.fromJson(data);
+  }
+
+  @override
   Future<List<UserModel>> fetchGroupMembers(String groupId) async {
     final rows = await _client
         .from('group_members')

@@ -198,6 +198,15 @@ class MockDatabaseRepository implements DatabaseRepository {
   }
 
   @override
+  Future<GroupModel> fetchGroup(String groupId) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    return _groups.firstWhere(
+      (group) => group.id == groupId,
+      orElse: () => throw StateError('Group not found: $groupId'),
+    );
+  }
+
+  @override
   Future<List<UserModel>> fetchGroupMembers(String groupId) async {
     await Future.delayed(const Duration(milliseconds: 200));
     final memberIds = _groupMembers

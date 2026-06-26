@@ -25,6 +25,9 @@ abstract class DatabaseRepository {
   /// Fetches all members of a specific group.
   Future<List<UserModel>> fetchGroupMembers(String groupId);
 
+  /// Fetches a single group by id.
+  Future<GroupModel> fetchGroup(String groupId);
+
   /// Fetches all groups the user belongs to.
   Future<List<GroupModel>> fetchUserGroups(String userId);
 

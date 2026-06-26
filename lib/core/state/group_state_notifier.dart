@@ -34,22 +34,15 @@ class GroupStateNotifier extends StateNotifier<GroupState> {
     // Clean up any existing listeners
     await _cancelSubscriptions();
 
-    state = state.copyWith(
+    state = GroupState(
       groupId: groupId,
       isLoading: true,
-      errorMessage: null,
-      members: [],
-      expenses: [],
-      splits: [],
-      settlements: [],
     );
 
     try {
-      // 1. Fetch group members first (static query)
+      final group = await _repository.fetchGroup(groupId);
       final members = await _repository.fetchGroupMembers(groupId);
-      state = state.copyWith(members: members);
-
-      // 2. Set up real-time stream listeners
+      state = state.copyWith(group: group, members: members);
       _expenseSub = _repository.streamExpenses(groupId).listen(
         (expenses) {
           state = state.copyWith(expenses: expenses);
