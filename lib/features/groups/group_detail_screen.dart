@@ -206,6 +206,8 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
       return const Center(child: Text('No balances yet.'));
     }
 
+    final currentUserId = ref.watch(currentUserIdProvider);
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -276,6 +278,8 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                 ...groupState.simplifiedDebts.map((transfer) {
                   final debtorName = _memberName(groupState, transfer.fromUserId);
                   final creditorName = _memberName(groupState, transfer.toUserId);
+                  final isDebtor = currentUserId == transfer.fromUserId;
+                  final isCreditor = currentUserId == transfer.toUserId;
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Row(
@@ -298,17 +302,25 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                               ),
                         ),
                         const SizedBox(width: 12),
-                        TextButton(
-                          onPressed: () => _showSettleSheet(
-                            transfer.fromUserId,
-                            transfer.toUserId,
-                            transfer.amount,
-                            debtorName,
-                            creditorName,
-                            groupState,
-                          ),
-                          child: const Text('Settle Up'),
-                        ),
+                        if (isDebtor)
+                          TextButton(
+                            onPressed: () => _showSettleSheet(
+                              transfer.fromUserId,
+                              transfer.toUserId,
+                              transfer.amount,
+                              debtorName,
+                              creditorName,
+                              groupState,
+                            ),
+                            child: const Text('Settle Up'),
+                          )
+                        else if (isCreditor)
+                          Text(
+                            'Awaiting payment',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          )
+                        else
+                          const SizedBox(width: 8),
                       ],
                     ),
                   );

@@ -32,11 +32,13 @@ class GroupListSection extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 12),
             child: AppCard(
               onTap: () => context.push('/groups/${group.id}'),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
@@ -44,33 +46,48 @@ class GroupListSection extends StatelessWidget {
                           AppColors.primary.withValues(alpha: 0.08),
                         ],
                       ),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       group.isTripMode ? Icons.flight_takeoff : Icons.groups,
                       color: AppColors.primary,
+                      size: 22,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           group.name,
-                          style: Theme.of(context).textTheme.titleSmall,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                height: 1.2,
+                              ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 3),
                         Text(
-                          group.isTripMode ? 'Trip mode' : (settled ? 'No outstanding balance' : 'Tap to view details'),
+                          group.isTripMode
+                              ? 'Trip mode'
+                              : (settled ? 'No outstanding balance' : 'Tap to view details'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
                     ),
                   ),
-                  BalanceChip(balance: balance),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+                  const SizedBox(width: 8),
+                  BalanceChip(balance: balance, compact: true),
+                  const SizedBox(width: 2),
+                  const Icon(
+                    Icons.chevron_right,
+                    size: 20,
+                    color: AppColors.textSecondary,
+                  ),
                 ],
               ),
             ),

@@ -129,7 +129,10 @@ class GroupStateNotifier extends StateNotifier<GroupState> {
       );
       await _syncGroupData();
     } catch (e) {
-      state = state.copyWith(errorMessage: 'Failed to initiate settlement: $e');
+      final message = e is StateError
+          ? e.message
+          : 'Failed to initiate settlement: $e';
+      state = state.copyWith(errorMessage: message);
       rethrow;
     }
   }

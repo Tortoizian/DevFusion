@@ -119,52 +119,6 @@ For release APK:
 flutter build apk --release
 ```
 
-**Edge Functions** (optional, for push + recurring expenses):
-
-```bash
-supabase functions deploy notify-settlement
-supabase functions deploy process-recurring
-```
-
-Set `FCM_SERVICE_ACCOUNT` in Supabase Edge Function secrets for push notifications.
-
----
-
-## Test account
-
-Sign in with Google using:
-
-| | |
-|---|---|
-| **Email** | [Add test Google account email here] |
-
-OAuth only. No password needed if you're already logged into that account on the device.
-
----
-
-## UPI (sandbox)
-
-All settlement flows are **test mode**. No real money moves.
-
-| | |
-|---|---|
-| **Test VPA** | `test@upi` |
-| **Platform** | Android only |
-
-The app shows an orange sandbox banner on settlement screens (labeled TEST MODE). Tapping Settle Up opens GPay/PhonePe with pre-filled amount, VPA, and a memo like `SplitSmart: Goa 2025 (6 expenses)`.
-
-iOS users see a message that UPI settlement is Android-only.
-
----
-
-## Team
-
-| Name | Role |
-|------|------|
-| Arnav Prasad | Solo developer (Flutter, Supabase, DSA, UI) |
-
----
-
 ## Known limitations
 
 - UPI deep links work on **Android only**. iOS shows a fallback message.

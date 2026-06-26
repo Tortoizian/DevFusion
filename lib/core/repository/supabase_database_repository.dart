@@ -204,9 +204,17 @@ class SupabaseDatabaseRepository implements DatabaseRepository {
     required String creditorId,
     required double amount,
   }) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) {
+      throw StateError('Not authenticated');
+    }
+    if (userId != debtorId) {
+      throw StateError('Only the person who owes can mark a settlement as paid');
+    }
+
     await _client.from('settlements').insert({
       'group_id': groupId,
-      'debtor_id': debtorId,
+      'debtor_id': userId,
       'creditor_id': creditorId,
       'amount': amount,
       'status': SettlementStatus.pending.name,
@@ -238,8 +246,8 @@ class SupabaseDatabaseRepository implements DatabaseRepository {
       fetch: () => _fetchSplitsForGroup(groupId),
       watches: [
         _client.from('expenses').stream(primaryKey: ['id']).eq('group_id', groupId),
-        _client.from('expense_splits').stream(primaryKey: ['id']),
       ],
+      debounceMs: 300,
     );
   }
 
@@ -266,25 +274,40 @@ class SupabaseDatabaseRepository implements DatabaseRepository {
   Stream<List<T>> _combinedRealtimeStream<T>({
     required Future<List<T>> Function() fetch,
     required List<Stream<List<Map<String, dynamic>>>> watches,
+    int debounceMs = 0,
   }) {
     final subscriptions = <StreamSubscription<List<Map<String, dynamic>>>>[];
+    Timer? debounceTimer;
 
     return Stream<List<T>>.multi((controller) async {
-      Future<void> emitLatest() async {
-        try {
-          controller.add(await fetch());
-        } catch (error, stackTrace) {
-          controller.addError(error, stackTrace);
+      Future<void> emitLatest({bool immediate = false}) async {
+        if (debounceMs <= 0 || immediate) {
+          try {
+            controller.add(await fetch());
+          } catch (error, stackTrace) {
+            controller.addError(error, stackTrace);
+          }
+          return;
         }
+
+        debounceTimer?.cancel();
+        debounceTimer = Timer(Duration(milliseconds: debounceMs), () async {
+          try {
+            controller.add(await fetch());
+          } catch (error, stackTrace) {
+            controller.addError(error, stackTrace);
+          }
+        });
       }
 
-      await emitLatest();
+      await emitLatest(immediate: true);
 
       for (final watch in watches) {
         subscriptions.add(watch.listen((_) => emitLatest(), onError: controller.addError));
       }
 
       controller.onCancel = () async {
+        debounceTimer?.cancel();
         for (final subscription in subscriptions) {
           await subscription.cancel();
         }
@@ -316,13 +339,6 @@ class SupabaseDatabaseRepository implements DatabaseRepository {
                 .listen((_) => controller.add(null), onError: controller.addError),
           );
         }
-
-        subscriptions.add(
-          _client
-              .from('expense_splits')
-              .stream(primaryKey: ['id'])
-              .listen((_) => controller.add(null), onError: controller.addError),
-        );
       } catch (error, stackTrace) {
         controller.addError(error, stackTrace);
       }

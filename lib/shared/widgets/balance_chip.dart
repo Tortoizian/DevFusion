@@ -3,10 +3,12 @@ import '../../core/theme/app_colors.dart';
 
 class BalanceChip extends StatelessWidget {
   final double balance;
+  final bool compact;
 
   const BalanceChip({
     super.key,
     required this.balance,
+    this.compact = false,
   });
 
   @override
@@ -17,11 +19,43 @@ class BalanceChip extends StatelessWidget {
         : balance > 0
             ? AppColors.owedToYou
             : AppColors.owed;
-    final label = settled
-        ? '₹0.00'
-        : '${balance > 0 ? '+' : '-'}₹${balance.abs().toStringAsFixed(2)}';
+    final label = _formatLabel(balance, compact: compact);
+
+    if (compact) {
+      return ConstrainedBox(
+        constraints: const BoxConstraints(
+          maxWidth: 72,
+          maxHeight: 26,
+          minWidth: 40,
+        ),
+        child: Container(
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: color.withValues(alpha: 0.2)),
+          ),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              maxLines: 1,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w700,
+                fontSize: 10,
+                height: 1.1,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return Chip(
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: VisualDensity.compact,
       backgroundColor: color.withValues(alpha: 0.1),
       side: BorderSide(color: color.withValues(alpha: 0.2)),
       label: Text(
@@ -33,4 +67,29 @@ class BalanceChip extends StatelessWidget {
       ),
     );
   }
+}
+
+String _formatLabel(double balance, {required bool compact}) {
+  final settled = balance.abs() < 0.01;
+  if (settled) {
+    return compact ? '₹0' : '₹0.00';
+  }
+
+  final prefix = balance > 0 ? '+' : '-';
+  final amount = balance.abs();
+
+  if (compact) {
+    if (amount >= 100000) {
+      return '$prefix₹${(amount / 100000).toStringAsFixed(1)}L';
+    }
+    if (amount >= 10000) {
+      return '$prefix₹${(amount / 1000).toStringAsFixed(1)}k';
+    }
+    if (amount % 1 == 0) {
+      return '$prefix₹${amount.toStringAsFixed(0)}';
+    }
+    return '$prefix₹${amount.toStringAsFixed(2)}';
+  }
+
+  return '$prefix₹${amount.toStringAsFixed(2)}';
 }
