@@ -13,6 +13,7 @@ import 'add_expense_modal.dart';
 import 'widgets/debt_graph_widget.dart';
 import 'widgets/expense_detail_sheet.dart';
 import 'widgets/expense_list_tile.dart';
+import 'widgets/group_summary_header.dart';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:confetti/confetti.dart';
@@ -142,18 +143,25 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
 
   Widget _buildBody() {
     final groupState = ref.watch(groupStateNotifierProvider);
-    switch (_currentIndex) {
-      case 0:
-        return _buildExpensesTab(groupState);
-      case 1:
-        return _buildBalancesTab(groupState);
-      case 2:
-        return _buildHistoryTab(groupState);
-      case 3:
-        return _buildAnalyticsTab(groupState);
-      default:
-        return const SizedBox.shrink();
+
+    if (groupState.isLoading && groupState.group == null) {
+      return const Center(child: CircularProgressIndicator());
     }
+
+    return Column(
+      children: [
+        GroupSummaryHeader(groupState: groupState),
+        Expanded(
+          child: switch (_currentIndex) {
+            0 => _buildExpensesTab(groupState),
+            1 => _buildBalancesTab(groupState),
+            2 => _buildHistoryTab(groupState),
+            3 => _buildAnalyticsTab(groupState),
+            _ => const SizedBox.shrink(),
+          },
+        ),
+      ],
+    );
   }
 
   void _showExpenseDetail(ExpenseModel expense, GroupState groupState) {
@@ -168,63 +176,24 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
   }
 
   Widget _buildExpensesTab(GroupState groupState) {
-    if (groupState.isLoading) {
+    if (groupState.isLoading && groupState.expenses.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
-    
-    final totalSpent = groupState.expenses
-        .where((e) => e.category != ExpenseCategory.settlement)
-        .fold(0.0, (sum, e) => sum + e.amount);
 
-    final isTrip = groupState.group?.isTripMode ?? false;
-    final budget = groupState.group?.tripBudget;
-
-    return Column(
-      children: [
-        if (isTrip)
-          Card(
-            margin: const EdgeInsets.all(16),
-            color: Colors.blue.shade50,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Text('Trip Summary', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  Text('Total Spent: ₹${totalSpent.toStringAsFixed(2)}'),
-                  if (budget != null && budget > 0) ...[
-                    const SizedBox(height: 4),
-                    Text('Budget: ₹${budget.toStringAsFixed(2)}'),
-                    const SizedBox(height: 8),
-                    LinearProgressIndicator(
-                      value: (totalSpent / budget).clamp(0.0, 1.0),
-                      backgroundColor: Colors.grey.shade300,
-                      color: totalSpent > budget ? Colors.red : Colors.green,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        Expanded(
-          child: groupState.expenses.isEmpty
-              ? const Center(child: Text('No expenses yet.'))
-              : ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 88),
-                  itemCount: groupState.expenses.length,
-                  itemBuilder: (context, index) {
-                    final expense = groupState.expenses[index];
-                    return ExpenseListTile(
-                      expense: expense,
-                      payerName: _memberName(groupState, expense.payerId),
-                      onTap: () => _showExpenseDetail(expense, groupState),
-                    );
-                  },
-                ),
-        ),
-      ],
-    );
+    return groupState.expenses.isEmpty
+        ? const Center(child: Text('No expenses yet.'))
+        : ListView.builder(
+            padding: const EdgeInsets.only(bottom: 88),
+            itemCount: groupState.expenses.length,
+            itemBuilder: (context, index) {
+              final expense = groupState.expenses[index];
+              return ExpenseListTile(
+                expense: expense,
+                payerName: _memberName(groupState, expense.payerId),
+                onTap: () => _showExpenseDetail(expense, groupState),
+              );
+            },
+          );
   }
 
   Widget _buildBalancesTab(GroupState groupState) {
