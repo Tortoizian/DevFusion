@@ -11,6 +11,7 @@ import '../../shared/widgets/app_card.dart';
 import '../../shared/widgets/balance_chip.dart';
 import 'add_expense_modal.dart';
 import 'widgets/debt_graph_widget.dart';
+import 'widgets/expense_detail_sheet.dart';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:confetti/confetti.dart';
@@ -154,6 +155,17 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
     }
   }
 
+  void _showExpenseDetail(ExpenseModel expense, GroupState groupState) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => ExpenseDetailSheet(
+        expense: expense,
+        groupState: groupState,
+      ),
+    );
+  }
+
   Widget _buildExpensesTab(GroupState groupState) {
     if (groupState.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -215,6 +227,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                             Text(expense.splitType.name.toUpperCase(), style: const TextStyle(fontSize: 12)),
                           ],
                         ),
+                        onTap: () => _showExpenseDetail(expense, groupState),
                       ),
                     );
                   },
@@ -521,6 +534,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                           expense.createdAt.toString().split(' ')[0],
                           style: const TextStyle(fontSize: 12),
                         ),
+                        onTap: () => _showExpenseDetail(expense, groupState),
                       ),
                     );
                   },
