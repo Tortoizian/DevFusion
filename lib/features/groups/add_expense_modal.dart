@@ -6,6 +6,7 @@ import '../../core/models/user_model.dart';
 import '../../core/state/group_state_notifier.dart';
 import '../../core/utils/category_classifier.dart';
 import '../../core/utils/ocr_scanner_service.dart';
+import '../dashboard/global_balance_provider.dart';
 import 'package:image_picker/image_picker.dart';
 
 class AddExpenseModal extends ConsumerStatefulWidget {
@@ -176,6 +177,8 @@ class _AddExpenseModalState extends ConsumerState<AddExpenseModal> {
       userOwedAmounts: splitAmounts,
       imagePath: _imagePath,
     );
+
+    refreshDashboardBalances(ref);
 
     if (mounted) {
       Navigator.pop(context);

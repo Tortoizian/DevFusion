@@ -19,6 +19,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:confetti/confetti.dart';
 import '../../core/models/expense_model.dart';
 import '../../core/utils/export_service.dart';
+import '../dashboard/global_balance_provider.dart';
 
 class GroupDetailScreen extends ConsumerStatefulWidget {
   final String groupId;
@@ -359,9 +360,12 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                       ),
                     ),
                     TextButton(
-                      onPressed: () => ref
-                          .read(groupStateNotifierProvider.notifier)
-                          .confirmSettlement(settlement.id),
+                      onPressed: () async {
+                        await ref
+                            .read(groupStateNotifierProvider.notifier)
+                            .confirmSettlement(settlement.id);
+                        refreshDashboardBalances(ref);
+                      },
                       child: const Text('Confirm'),
                     ),
                   ],
@@ -638,6 +642,7 @@ class _SettleUpSheetState extends ConsumerState<_SettleUpSheet> {
             creditorId: widget.creditorId,
             amount: widget.amount,
           );
+      refreshDashboardBalances(ref);
       if (!mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
