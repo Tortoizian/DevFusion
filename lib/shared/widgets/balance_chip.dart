@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/currency_format.dart';
 
 class BalanceChip extends StatelessWidget {
   final double balance;
@@ -19,7 +20,7 @@ class BalanceChip extends StatelessWidget {
         : balance > 0
             ? AppColors.owedToYou
             : AppColors.owed;
-    final label = _formatLabel(balance, compact: compact);
+    final label = formatCurrencyAmount(balance, compact: compact, showSign: !settled);
 
     if (compact) {
       return ConstrainedBox(
@@ -67,29 +68,4 @@ class BalanceChip extends StatelessWidget {
       ),
     );
   }
-}
-
-String _formatLabel(double balance, {required bool compact}) {
-  final settled = balance.abs() < 0.01;
-  if (settled) {
-    return compact ? '₹0' : '₹0.00';
-  }
-
-  final prefix = balance > 0 ? '+' : '-';
-  final amount = balance.abs();
-
-  if (compact) {
-    if (amount >= 100000) {
-      return '$prefix₹${(amount / 100000).toStringAsFixed(1)}L';
-    }
-    if (amount >= 10000) {
-      return '$prefix₹${(amount / 1000).toStringAsFixed(1)}k';
-    }
-    if (amount % 1 == 0) {
-      return '$prefix₹${amount.toStringAsFixed(0)}';
-    }
-    return '$prefix₹${amount.toStringAsFixed(2)}';
-  }
-
-  return '$prefix₹${amount.toStringAsFixed(2)}';
 }

@@ -5,6 +5,7 @@ import '../../core/models/user_model.dart';
 import '../../core/models/settlement_model.dart';
 import '../../core/state/group_state.dart';
 import '../../core/state/group_state_notifier.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/utils/settlement_memo.dart';
 import '../../core/utils/upi_launcher.dart';
 import '../../shared/widgets/app_card.dart';
@@ -14,6 +15,7 @@ import 'widgets/debt_graph_widget.dart';
 import 'widgets/expense_detail_sheet.dart';
 import 'widgets/expense_list_tile.dart';
 import 'widgets/group_summary_header.dart';
+import 'widgets/simplified_transfer_tile.dart';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:confetti/confetti.dart';
@@ -278,50 +280,19 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                 ...groupState.simplifiedDebts.map((transfer) {
                   final debtorName = _memberName(groupState, transfer.fromUserId);
                   final creditorName = _memberName(groupState, transfer.toUserId);
-                  final isDebtor = currentUserId == transfer.fromUserId;
-                  final isCreditor = currentUserId == transfer.toUserId;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Row(
-                      children: [
-                        const CircleAvatar(
-                          radius: 18,
-                          child: Icon(Icons.swap_horiz, size: 18),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            '$debtorName pays $creditorName',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        ),
-                        Text(
-                          '₹${transfer.amount.toStringAsFixed(2)}',
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                        ),
-                        const SizedBox(width: 12),
-                        if (isDebtor)
-                          TextButton(
-                            onPressed: () => _showSettleSheet(
-                              transfer.fromUserId,
-                              transfer.toUserId,
-                              transfer.amount,
-                              debtorName,
-                              creditorName,
-                              groupState,
-                            ),
-                            child: const Text('Settle Up'),
-                          )
-                        else if (isCreditor)
-                          Text(
-                            'Awaiting payment',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          )
-                        else
-                          const SizedBox(width: 8),
-                      ],
+                  return SimplifiedTransferTile(
+                    debtorName: debtorName,
+                    creditorName: creditorName,
+                    amount: transfer.amount,
+                    isDebtor: currentUserId == transfer.fromUserId,
+                    isCreditor: currentUserId == transfer.toUserId,
+                    onSettleUp: () => _showSettleSheet(
+                      transfer.fromUserId,
+                      transfer.toUserId,
+                      transfer.amount,
+                      debtorName,
+                      creditorName,
+                      groupState,
                     ),
                   );
                 }),
@@ -357,28 +328,69 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
             ...pendingSettlements.map((settlement) {
               final debtorName = _memberName(groupState, settlement.debtorId);
               return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(bottom: 10),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const CircleAvatar(
-                      radius: 18,
-                      child: Icon(Icons.pending_actions, size: 18),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        '$debtorName marked ₹${settlement.amount.toStringAsFixed(2)} as paid',
-                        style: Theme.of(context).textTheme.bodyMedium,
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: AppColors.secondary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.pending_actions,
+                        size: 18,
+                        color: AppColors.secondary,
                       ),
                     ),
-                    TextButton(
-                      onPressed: () async {
-                        await ref
-                            .read(groupStateNotifierProvider.notifier)
-                            .confirmSettlement(settlement.id);
-                        refreshDashboardBalances(ref);
-                      },
-                      child: const Text('Confirm'),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            debtorName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'marked as paid',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              TransferAmountBadge(
+                                amount: settlement.amount,
+                                color: AppColors.success,
+                              ),
+                              const Spacer(),
+                              TextButton(
+                                onPressed: () async {
+                                  await ref
+                                      .read(groupStateNotifierProvider.notifier)
+                                      .confirmSettlement(settlement.id);
+                                  refreshDashboardBalances(ref);
+                                },
+                                style: TextButton.styleFrom(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: const Text('Confirm'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
