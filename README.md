@@ -20,7 +20,7 @@ We built it for DevFusion 3.O as a Flutter + Supabase project with the DSA chall
 
 ## Download the app
 
-**Release APK (Google Drive):** [Add your APK link here]
+**Release APK (Google Drive):** https://drive.google.com/file/d/1oZfnYOZ2keFEZLKBV3D32X1-YR817bA6/view?usp=drive_link
 
 Install on Android, sign in with the test Google account below, and you're good to go. The backend runs on Supabase cloud, not localhost, so it works on any device with internet.
 
