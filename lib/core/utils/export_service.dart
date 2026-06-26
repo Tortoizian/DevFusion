@@ -60,7 +60,7 @@ class ExportService {
       ]);
     }
 
-    String csvData = const ListToCsvConverter().convert(rows);
+    final csvData = csv.encode(rows);
 
     final dir = await getApplicationDocumentsDirectory();
     final file = File('${dir.path}/expenses_${groupState.groupId}.csv');

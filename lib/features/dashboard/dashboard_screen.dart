@@ -8,8 +8,8 @@ import 'global_balance_provider.dart';
 import 'widgets/dashboard_empty_state.dart';
 import 'widgets/global_balance_card.dart';
 
+import '../../core/state/group_state_notifier.dart';
 import '../../core/utils/push_notification_service.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});

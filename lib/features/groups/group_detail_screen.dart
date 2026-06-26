@@ -29,7 +29,6 @@ class GroupDetailScreen extends ConsumerStatefulWidget {
 class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
   int _currentIndex = 0;
   ExpenseCategory? _historyFilterCategory;
-  ExpenseCategory? _historyFilterCategory;
   bool _showSimplifiedGraph = false;
   late ConfettiController _confettiController;
 
@@ -560,10 +559,9 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
     final categoryColors = {
       ExpenseCategory.food: Colors.orange,
       ExpenseCategory.travel: Colors.blue,
-      ExpenseCategory.entertainment: Colors.purple,
-      ExpenseCategory.shopping: Colors.pink,
-      ExpenseCategory.accommodation: Colors.indigo,
+      ExpenseCategory.rent: Colors.indigo,
       ExpenseCategory.utilities: Colors.amber,
+      ExpenseCategory.entertainment: Colors.purple,
       ExpenseCategory.other: Colors.grey,
     };
 
