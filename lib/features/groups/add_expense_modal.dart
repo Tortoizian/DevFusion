@@ -193,6 +193,17 @@ class _AddExpenseModalState extends ConsumerState<AddExpenseModal> {
     return members.first.id;
   }
 
+  Widget _splitTypeChip(String value, String label) {
+    final selected = _splitType == value;
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => setState(() => _splitType = value),
+      showCheckmark: false,
+      selectedColor: Theme.of(context).colorScheme.primaryContainer,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final groupState = ref.watch(groupStateNotifierProvider);
@@ -247,17 +258,17 @@ class _AddExpenseModalState extends ConsumerState<AddExpenseModal> {
               decoration: const InputDecoration(labelText: 'Paid By', border: OutlineInputBorder()),
             ),
             const SizedBox(height: 16),
-            SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(value: 'equal', label: Text('Equal')),
-                ButtonSegment(value: 'exact', label: Text('Exact')),
-                ButtonSegment(value: 'percentage', label: Text('%')),
-                ButtonSegment(value: 'shares', label: Text('Shares')),
+            Text('Split type', style: Theme.of(context).textTheme.labelLarge),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _splitTypeChip('equal', 'Equal'),
+                _splitTypeChip('exact', 'Exact'),
+                _splitTypeChip('percentage', '%'),
+                _splitTypeChip('shares', 'Shares'),
               ],
-              selected: {_splitType},
-              onSelectionChanged: (set) {
-                setState(() => _splitType = set.first);
-              },
             ),
             if (_splitType == 'exact')
               ...groupState.members.map((m) {
