@@ -7,6 +7,18 @@ import '../../../core/state/group_state.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/app_card.dart';
 
+class _LayoutEdge {
+  final DebtTransfer edge;
+  final int laneIndex;
+  final int laneCount;
+
+  const _LayoutEdge({
+    required this.edge,
+    required this.laneIndex,
+    required this.laneCount,
+  });
+}
+
 class DebtGraphWidget extends StatelessWidget {
   final GroupState groupState;
   final bool showSimplified;
@@ -63,7 +75,7 @@ class DebtGraphWidget extends StatelessWidget {
             },
             child: SizedBox(
               key: ValueKey(showSimplified),
-              height: 280,
+              height: 300,
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   if (groupState.members.isEmpty || activeEdges.isEmpty) {
@@ -88,7 +100,7 @@ class DebtGraphWidget extends StatelessWidget {
                       CustomPaint(
                         size: size,
                         painter: _DebtGraphPainter(
-                          edges: activeEdges,
+                          layoutEdges: _layoutEdges(activeEdges),
                           nodePositions: nodeMap,
                           color: showSimplified ? AppColors.owedToYou : AppColors.owed,
                         ),
@@ -116,7 +128,7 @@ class DebtGraphWidget extends StatelessWidget {
 
   List<DebtTransfer> _rawEdges() {
     final memberIds = groupState.members.map((member) => member.id).toSet();
-    final edges = <DebtTransfer>[];
+    final totals = <String, double>{};
 
     for (final expense in groupState.expenses) {
       for (final split in groupState.splits.where((s) => s.expenseId == expense.id)) {
@@ -124,17 +136,35 @@ class DebtGraphWidget extends StatelessWidget {
         if (!memberIds.contains(split.userId) || !memberIds.contains(expense.payerId)) {
           continue;
         }
-        edges.add(
-          DebtTransfer(
-            fromUserId: split.userId,
-            toUserId: expense.payerId,
-            amount: split.amountOwed,
-          ),
-        );
+        final key = '${split.userId}->${expense.payerId}';
+        totals[key] = (totals[key] ?? 0) + split.amountOwed;
       }
     }
 
-    return edges;
+    return totals.entries.map((entry) {
+      final parts = entry.key.split('->');
+      return DebtTransfer(
+        fromUserId: parts[0],
+        toUserId: parts[1],
+        amount: _round(entry.value),
+      );
+    }).where((edge) => edge.amount >= 0.01).toList();
+  }
+
+  List<_LayoutEdge> _layoutEdges(List<DebtTransfer> edges) {
+    final grouped = <String, List<DebtTransfer>>{};
+    for (final edge in edges) {
+      final key = '${edge.fromUserId}->${edge.toUserId}';
+      grouped.putIfAbsent(key, () => []).add(edge);
+    }
+
+    final layout = <_LayoutEdge>[];
+    for (final group in grouped.values) {
+      for (var i = 0; i < group.length; i++) {
+        layout.add(_LayoutEdge(edge: group[i], laneIndex: i, laneCount: group.length));
+      }
+    }
+    return layout;
   }
 
   List<Offset> _nodePositions(Size size, int count) {
@@ -142,7 +172,7 @@ class DebtGraphWidget extends StatelessWidget {
       return [Offset(size.width / 2, size.height / 2)];
     }
 
-    final radius = math.min(size.width, size.height) / 2 - 34;
+    final radius = math.min(size.width, size.height) / 2 - 40;
     final center = Offset(size.width / 2, size.height / 2);
 
     return List.generate(count, (index) {
@@ -153,6 +183,8 @@ class DebtGraphWidget extends StatelessWidget {
       );
     });
   }
+
+  double _round(double value) => (value * 100).round() / 100.0;
 
   String _initials(String name) {
     final parts = name.trim().split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
@@ -206,12 +238,12 @@ class _GraphNode extends StatelessWidget {
 }
 
 class _DebtGraphPainter extends CustomPainter {
-  final List<DebtTransfer> edges;
+  final List<_LayoutEdge> layoutEdges;
   final Map<String, Offset> nodePositions;
   final Color color;
 
   _DebtGraphPainter({
-    required this.edges,
+    required this.layoutEdges,
     required this.nodePositions,
     required this.color,
   });
@@ -219,37 +251,50 @@ class _DebtGraphPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = color.withValues(alpha: 0.8)
-      ..strokeWidth = 2
+      ..color = color.withValues(alpha: 0.85)
+      ..strokeWidth = 2.2
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    for (final edge in edges) {
+    for (final layout in layoutEdges) {
+      final edge = layout.edge;
       final from = nodePositions[edge.fromUserId];
       final to = nodePositions[edge.toUserId];
       if (from == null || to == null) continue;
 
-      final path = Path();
       final angle = math.atan2(to.dy - from.dy, to.dx - from.dx);
-      final offset = const Offset(24, 24);
-      final start = from + Offset(math.cos(angle) * offset.dx, math.sin(angle) * offset.dy);
-      final end = to - Offset(math.cos(angle) * offset.dx, math.sin(angle) * offset.dy);
+      const nodeRadius = 26.0;
+      final unit = Offset(math.cos(angle), math.sin(angle));
+      final perpendicular = Offset(-unit.dy, unit.dx);
+      final laneOffset = (layout.laneIndex - (layout.laneCount - 1) / 2) * 18;
 
-      path.moveTo(start.dx, start.dy);
-      path.lineTo(end.dx, end.dy);
+      final start = from + unit * nodeRadius + perpendicular * laneOffset;
+      final end = to - unit * nodeRadius + perpendicular * laneOffset;
+
+      final path = Path()..moveTo(start.dx, start.dy);
+      if (layout.laneCount > 1) {
+        final control = Offset(
+          (start.dx + end.dx) / 2 + perpendicular.dx * laneOffset * 1.4,
+          (start.dy + end.dy) / 2 + perpendicular.dy * laneOffset * 1.4,
+        );
+        path.quadraticBezierTo(control.dx, control.dy, end.dx, end.dy);
+        _drawArrowHead(canvas, end, control, paint);
+      } else {
+        path.lineTo(end.dx, end.dy);
+        _drawArrowHead(canvas, end, start, paint);
+      }
+
       canvas.drawPath(path, paint);
-
-      _drawArrowHead(canvas, end, angle, paint);
-      _drawAmountBadge(canvas, start, end, edge.amount);
+      _drawAmountBadge(canvas, start, end, edge.amount, laneOffset, perpendicular);
     }
   }
 
-  void _drawArrowHead(Canvas canvas, Offset end, double angle, Paint paint) {
+  void _drawArrowHead(Canvas canvas, Offset end, Offset from, Paint paint) {
+    final angle = math.atan2(end.dy - from.dy, end.dx - from.dx);
     final arrowPaint = Paint()
       ..color = paint.color
       ..style = PaintingStyle.fill;
 
-    final path = Path();
     const arrowSize = 8.0;
     final left = Offset(
       end.dx - arrowSize * math.cos(angle - math.pi / 6),
@@ -259,21 +304,30 @@ class _DebtGraphPainter extends CustomPainter {
       end.dx - arrowSize * math.cos(angle + math.pi / 6),
       end.dy - arrowSize * math.sin(angle + math.pi / 6),
     );
-    path.moveTo(end.dx, end.dy);
-    path.lineTo(left.dx, left.dy);
-    path.lineTo(right.dx, right.dy);
-    path.close();
+
+    final path = Path()
+      ..moveTo(end.dx, end.dy)
+      ..lineTo(left.dx, left.dy)
+      ..lineTo(right.dx, right.dy)
+      ..close();
     canvas.drawPath(path, arrowPaint);
   }
 
-  void _drawAmountBadge(Canvas canvas, Offset start, Offset end, double amount) {
+  void _drawAmountBadge(
+    Canvas canvas,
+    Offset start,
+    Offset end,
+    double amount,
+    double laneOffset,
+    Offset perpendicular,
+  ) {
     final midpoint = Offset(
-      (start.dx + end.dx) / 2,
-      (start.dy + end.dy) / 2,
+      (start.dx + end.dx) / 2 + perpendicular.dx * laneOffset * 0.2,
+      (start.dy + end.dy) / 2 + perpendicular.dy * laneOffset * 0.2,
     );
     final textPainter = TextPainter(
       text: TextSpan(
-        text: '₹${amount.toStringAsFixed(0)}',
+        text: '₹${amount.toStringAsFixed(amount % 1 == 0 ? 0 : 2)}',
         style: const TextStyle(
           color: AppColors.textPrimary,
           fontSize: 11,
@@ -293,7 +347,14 @@ class _DebtGraphPainter extends CustomPainter {
     );
     canvas.drawRRect(
       rect,
-      Paint()..color = Colors.white.withValues(alpha: 0.9),
+      Paint()..color = Colors.white.withValues(alpha: 0.94),
+    );
+    canvas.drawRRect(
+      rect,
+      Paint()
+        ..color = color.withValues(alpha: 0.25)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
     );
     textPainter.paint(
       canvas,
@@ -306,7 +367,7 @@ class _DebtGraphPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _DebtGraphPainter oldDelegate) {
-    return oldDelegate.edges != edges ||
+    return oldDelegate.layoutEdges != layoutEdges ||
         oldDelegate.nodePositions != nodePositions ||
         oldDelegate.color != color;
   }
