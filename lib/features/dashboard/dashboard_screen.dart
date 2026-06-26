@@ -19,7 +19,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
   ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+class _DashboardScreenState extends ConsumerState<DashboardScreen> with WidgetsBindingObserver {
   String _avatarUrl(String name) {
     return UserModel(
       id: '',
@@ -32,6 +32,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final profile = ref.read(currentProfileProvider).valueOrNull;
       if (profile != null) {
@@ -41,6 +42,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         );
       }
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      refreshDashboardBalances(ref);
+    }
+  }
+
+  Future<void> _onRefresh() async {
+    refreshDashboardBalances(ref);
+    await ref.read(userGroupSummariesProvider.future);
   }
 
   @override
@@ -65,9 +84,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ],
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
+        child: RefreshIndicator(
+          onRefresh: _onRefresh,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            children: [
             Text(
               'Hey, $displayName',
               style: Theme.of(context).textTheme.titleMedium,
@@ -116,6 +138,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               onPressed: () => context.push('/groups/join'),
             ),
           ],
+        ),
         ),
       ),
     );

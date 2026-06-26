@@ -19,6 +19,7 @@ class MockDatabaseRepository implements DatabaseRepository {
   final Map<String, StreamController<List<ExpenseModel>>> _expenseControllers = {};
   final Map<String, StreamController<List<ExpenseSplitModel>>> _splitsControllers = {};
   final Map<String, StreamController<List<SettlementModel>>> _settlementsControllers = {};
+  final StreamController<void> _activityController = StreamController<void>.broadcast();
 
   MockDatabaseRepository() {
     _insertSeedData();
@@ -103,6 +104,9 @@ class MockDatabaseRepository implements DatabaseRepository {
     }
     if (_settlementsControllers.containsKey(groupId)) {
       _settlementsControllers[groupId]!.add(_getSettlementsForGroup(groupId));
+    }
+    if (!_activityController.isClosed) {
+      _activityController.add(null);
     }
   }
 
@@ -242,6 +246,11 @@ class MockDatabaseRepository implements DatabaseRepository {
   Future<List<SettlementModel>> fetchSettlementsForGroup(String groupId) async {
     await Future.delayed(const Duration(milliseconds: 100));
     return _getSettlementsForGroup(groupId);
+  }
+
+  @override
+  Stream<void> watchUserGroupsActivity(String userId) {
+    return _activityController.stream;
   }
 
   @override

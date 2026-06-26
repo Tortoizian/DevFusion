@@ -293,4 +293,47 @@ class SupabaseDatabaseRepository implements DatabaseRepository {
     });
   }
 
+  @override
+  Stream<void> watchUserGroupsActivity(String userId) {
+    final subscriptions = <StreamSubscription<List<Map<String, dynamic>>>>[];
+
+    return Stream<void>.multi((controller) async {
+      try {
+        final groups = await fetchUserGroups(userId);
+        for (final group in groups) {
+          subscriptions.add(
+            _client
+                .from('expenses')
+                .stream(primaryKey: ['id'])
+                .eq('group_id', group.id)
+                .listen((_) => controller.add(null), onError: controller.addError),
+          );
+          subscriptions.add(
+            _client
+                .from('settlements')
+                .stream(primaryKey: ['id'])
+                .eq('group_id', group.id)
+                .listen((_) => controller.add(null), onError: controller.addError),
+          );
+        }
+
+        subscriptions.add(
+          _client
+              .from('expense_splits')
+              .stream(primaryKey: ['id'])
+              .listen((_) => controller.add(null), onError: controller.addError),
+        );
+      } catch (error, stackTrace) {
+        controller.addError(error, stackTrace);
+      }
+
+      controller.onCancel = () async {
+        for (final subscription in subscriptions) {
+          await subscription.cancel();
+        }
+        subscriptions.clear();
+      };
+    });
+  }
+
 }

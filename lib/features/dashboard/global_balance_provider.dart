@@ -45,26 +45,44 @@ Future<List<GroupBalanceSummary>> _loadGroupBalanceSummaries(
   return summaries;
 }
 
-/// Sums the signed-in user's net balance across every group they belong to.
-final globalBalanceProvider = FutureProvider<double>((ref) async {
-  final userId = ref.watch(currentUserIdProvider);
-  if (userId == null) return 0.0;
+Stream<List<GroupBalanceSummary>> _watchGroupBalanceSummaries(
+  DatabaseRepository repository,
+  String userId,
+) async* {
+  yield await _loadGroupBalanceSummaries(repository, userId);
+  await for (final _ in repository.watchUserGroupsActivity(userId)) {
+    yield await _loadGroupBalanceSummaries(repository, userId);
+  }
+}
 
-  final summaries = await ref.watch(userGroupSummariesProvider.future);
-  return summaries.fold<double>(0.0, (total, summary) => total + summary.netBalance);
-});
+void refreshDashboardBalances(WidgetRef ref) {
+  ref.invalidate(userGroupSummariesProvider);
+}
 
-/// Groups with per-group balances for the dashboard list.
-final userGroupSummariesProvider = FutureProvider<List<GroupBalanceSummary>>((ref) async {
+/// Groups with live per-group balances for the dashboard list.
+final userGroupSummariesProvider = StreamProvider<List<GroupBalanceSummary>>((ref) {
   final userId = ref.watch(currentUserIdProvider);
-  if (userId == null) return [];
+  if (userId == null) return Stream.value(const []);
 
   final repository = ref.watch(databaseRepositoryProvider);
-  return _loadGroupBalanceSummaries(repository, userId);
+  return _watchGroupBalanceSummaries(repository, userId);
+});
+
+/// Sums the signed-in user's net balance across every group they belong to.
+final globalBalanceProvider = Provider<AsyncValue<double>>((ref) {
+  return ref.watch(userGroupSummariesProvider).when(
+        data: (summaries) => AsyncData(
+          summaries.fold<double>(0.0, (total, summary) => total + summary.netBalance),
+        ),
+        loading: () => const AsyncLoading(),
+        error: (error, stackTrace) => AsyncError(error, stackTrace),
+      );
 });
 
 /// Groups for the signed-in user — used to toggle dashboard empty state.
-final userGroupsProvider = FutureProvider<List<GroupModel>>((ref) async {
-  final summaries = await ref.watch(userGroupSummariesProvider.future);
-  return summaries.map((summary) => summary.group).toList();
+final userGroupsProvider = Provider<List<GroupModel>>((ref) {
+  return ref.watch(userGroupSummariesProvider).maybeWhen(
+        data: (summaries) => summaries.map((summary) => summary.group).toList(),
+        orElse: () => const [],
+      );
 });

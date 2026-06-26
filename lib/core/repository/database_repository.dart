@@ -31,6 +31,9 @@ abstract class DatabaseRepository {
   /// Fetches all groups the user belongs to.
   Future<List<GroupModel>> fetchUserGroups(String userId);
 
+  /// Emits when expenses or settlements may have changed for the user's groups.
+  Stream<void> watchUserGroupsActivity(String userId);
+
   /// One-shot fetch of a group's expenses (for balance calculations).
   Future<List<ExpenseModel>> fetchExpensesForGroup(String groupId);
 
