@@ -27,6 +27,7 @@ class GroupListSection extends StatelessWidget {
         const SizedBox(height: 12),
         ...groups.map((group) {
           final balance = balancesByGroupId[group.id] ?? 0.0;
+          final settled = balance.abs() < 0.01;
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: AppCard(
@@ -34,13 +35,21 @@ class GroupListSection extends StatelessWidget {
               child: Row(
                 children: [
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: 48,
+                    height: 48,
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.primary.withValues(alpha: 0.18),
+                          AppColors.primary.withValues(alpha: 0.08),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Icon(Icons.groups, color: AppColors.primary),
+                    child: Icon(
+                      group.isTripMode ? Icons.flight_takeoff : Icons.groups,
+                      color: AppColors.primary,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -51,11 +60,11 @@ class GroupListSection extends StatelessWidget {
                           group.name,
                           style: Theme.of(context).textTheme.titleSmall,
                         ),
-                        if (group.isTripMode)
-                          Text(
-                            'Trip mode',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
+                        const SizedBox(height: 4),
+                        Text(
+                          group.isTripMode ? 'Trip mode' : (settled ? 'No outstanding balance' : 'Tap to view details'),
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
                       ],
                     ),
                   ),

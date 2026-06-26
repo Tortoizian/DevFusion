@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/models/expense_model.dart';
 import '../../../core/state/group_state.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/expense_category_style.dart';
 
 class ExpenseDetailSheet extends StatelessWidget {
   final ExpenseModel expense;
@@ -44,17 +45,41 @@ class ExpenseDetailSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            Text(
-              expense.description,
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '₹${expense.amount.toStringAsFixed(2)}',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w700,
+            Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: ExpenseCategoryStyle.color(expense.category).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
                   ),
+                  child: Icon(
+                    ExpenseCategoryStyle.icon(expense.category),
+                    color: ExpenseCategoryStyle.color(expense.category),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        expense.description,
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '₹${expense.amount.toStringAsFixed(2)}',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 20),
             _DetailRow(label: 'Paid by', value: payerName),

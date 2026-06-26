@@ -12,6 +12,7 @@ import '../../shared/widgets/balance_chip.dart';
 import 'add_expense_modal.dart';
 import 'widgets/debt_graph_widget.dart';
 import 'widgets/expense_detail_sheet.dart';
+import 'widgets/expense_list_tile.dart';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:confetti/confetti.dart';
@@ -210,25 +211,14 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
           child: groupState.expenses.isEmpty
               ? const Center(child: Text('No expenses yet.'))
               : ListView.builder(
+                  padding: const EdgeInsets.only(bottom: 88),
                   itemCount: groupState.expenses.length,
                   itemBuilder: (context, index) {
                     final expense = groupState.expenses[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: ListTile(
-                        leading: const CircleAvatar(child: Icon(Icons.receipt)),
-                        title: Text(expense.description),
-                        subtitle: Text('${_memberName(groupState, expense.payerId)} paid ₹${expense.amount.toStringAsFixed(2)}'),
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(expense.category.name.toUpperCase(), style: const TextStyle(fontSize: 10, color: Colors.grey)),
-                            Text(expense.splitType.name.toUpperCase(), style: const TextStyle(fontSize: 12)),
-                          ],
-                        ),
-                        onTap: () => _showExpenseDetail(expense, groupState),
-                      ),
+                    return ExpenseListTile(
+                      expense: expense,
+                      payerName: _memberName(groupState, expense.payerId),
+                      onTap: () => _showExpenseDetail(expense, groupState),
                     );
                   },
                 ),
@@ -521,21 +511,15 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
           child: filtered.isEmpty
               ? const Center(child: Text('No expenses match filters.'))
               : ListView.builder(
+                  padding: const EdgeInsets.only(bottom: 16),
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
                     final expense = filtered[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      child: ListTile(
-                        leading: const CircleAvatar(child: Icon(Icons.history)),
-                        title: Text(expense.description),
-                        subtitle: Text('${_memberName(groupState, expense.payerId)} paid ₹${expense.amount.toStringAsFixed(2)}'),
-                        trailing: Text(
-                          expense.createdAt.toString().split(' ')[0],
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                        onTap: () => _showExpenseDetail(expense, groupState),
-                      ),
+                    return ExpenseListTile(
+                      expense: expense,
+                      payerName: _memberName(groupState, expense.payerId),
+                      trailingLabel: expense.createdAt.toString().split(' ')[0],
+                      onTap: () => _showExpenseDetail(expense, groupState),
                     );
                   },
                 ),
