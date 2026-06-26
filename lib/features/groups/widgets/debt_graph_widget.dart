@@ -7,7 +7,6 @@ import '../../../core/algorithms/debt_simplification.dart';
 import '../../../core/state/group_state.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/app_card.dart';
-import '../../../shared/widgets/balance_chip.dart';
 
 class _GraphEdge {
   final DebtTransfer transfer;
@@ -99,9 +98,10 @@ class _DebtGraphWidgetState extends State<DebtGraphWidget>
         ? simplifiedEdges
         : rawEdges.map((edge) => edge.transfer).toList();
 
+    final memberCount = groupState.members.length;
     final graphHeight = showSimplified
-        ? 300.0
-        : math.min(360.0, math.max(260.0, 220.0 + rawEdges.length * 6.0));
+        ? math.min(340.0, math.max(280.0, 240.0 + memberCount * 12.0))
+        : math.min(380.0, math.max(280.0, 240.0 + memberCount * 10.0));
 
     return AppCard(
       padding: const EdgeInsets.all(16),
@@ -217,8 +217,8 @@ class _DebtGraphWidgetState extends State<DebtGraphWidget>
                     ),
                     for (var i = 0; i < groupState.members.length; i++)
                       Positioned(
-                        left: positions[i].dx - 36,
-                        top: positions[i].dy - 36,
+                        left: positions[i].dx - 30,
+                        top: positions[i].dy - 34,
                         child: _GraphNode(
                           label: _initials(groupState.members[i].name),
                           name: groupState.members[i].name,
@@ -351,7 +351,7 @@ class _DebtGraphWidgetState extends State<DebtGraphWidget>
       return [Offset(size.width / 2, size.height / 2)];
     }
 
-    final radius = math.min(size.width, size.height) / 2 - 52;
+    final radius = math.min(size.width, size.height) / 2 - 64;
     final center = Offset(size.width / 2, size.height / 2);
 
     return List.generate(count, (index) {
@@ -371,6 +371,26 @@ class _DebtGraphWidgetState extends State<DebtGraphWidget>
     if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
     return '${parts.first.substring(0, 1)}${parts.last.substring(0, 1)}'.toUpperCase();
   }
+}
+
+String _formatCurrency(double amount) {
+  if (amount.abs() >= 100000) {
+    return '₹${(amount / 100000).toStringAsFixed(1)}L';
+  }
+  if (amount.abs() >= 10000) {
+    return '₹${(amount / 1000).toStringAsFixed(1)}k';
+  }
+  if (amount % 1 == 0) {
+    return '₹${amount.toStringAsFixed(0)}';
+  }
+  return '₹${amount.toStringAsFixed(2)}';
+}
+
+String _formatGraphBalance(double balance) {
+  final settled = balance.abs() < 0.01;
+  if (settled) return '₹0';
+  final prefix = balance > 0 ? '+' : '-';
+  return '$prefix${_formatCurrency(balance.abs())}';
 }
 
 class _ModeToggle extends StatelessWidget {
@@ -512,8 +532,8 @@ class _TransactionRow extends StatelessWidget {
             ),
           ),
           Text(
-            '₹${amount.toStringAsFixed(2)}',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            _formatCurrency(amount),
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: AppColors.owed,
                   fontWeight: FontWeight.w700,
                 ),
@@ -541,8 +561,15 @@ class _GraphNode extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final settled = balance.abs() < 0.01;
+    final balanceColor = settled
+        ? AppColors.textSecondary
+        : balance > 0
+            ? AppColors.owedToYou
+            : AppColors.owed;
+
     return SizedBox(
-      width: 72,
+      width: 60,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -560,27 +587,52 @@ class _GraphNode extends StatelessWidget {
                   )
                 : null,
             child: CircleAvatar(
-              radius: 24,
+              radius: 20,
               backgroundColor: color.withValues(alpha: 0.15),
               child: Text(
                 label,
                 style: TextStyle(
                   color: color,
                   fontWeight: FontWeight.w700,
+                  fontSize: 13,
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           Text(
             name,
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontSize: 10,
+                  height: 1.1,
+                ),
           ),
           const SizedBox(height: 2),
-          BalanceChip(balance: balance),
+          Container(
+            constraints: const BoxConstraints(maxWidth: 58),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+            decoration: BoxDecoration(
+              color: balanceColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: balanceColor.withValues(alpha: 0.2)),
+            ),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                _formatGraphBalance(balance),
+                maxLines: 1,
+                style: TextStyle(
+                  color: balanceColor,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 9,
+                  height: 1.1,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -641,7 +693,7 @@ class _DebtGraphPainter extends CustomPainter {
     if (from == null || to == null) return;
 
     final angle = math.atan2(to.dy - from.dy, to.dx - from.dx);
-    const nodeRadius = 30.0;
+    const nodeRadius = 24.0;
     final unit = Offset(math.cos(angle), math.sin(angle));
     var perpendicular = Offset(-unit.dy, unit.dx);
 
@@ -699,7 +751,9 @@ class _DebtGraphPainter extends CustomPainter {
     _drawArrowHead(canvas, end, control, linePaint.color.withValues(alpha: opacity));
 
     if (simplified) {
-      final badgePoint = _quadraticPoint(start, control, end, 0.5);
+      final laneOffsetT = (layout.laneIndex - (layout.laneCount - 1) / 2) * 0.08;
+      final badgeT = (0.5 + laneOffsetT).clamp(0.28, 0.72);
+      final badgePoint = _quadraticPoint(start, control, end, badgeT);
       _drawAmountBadge(canvas, badgePoint, edge.amount, baseColor);
     }
   }
@@ -729,25 +783,43 @@ class _DebtGraphPainter extends CustomPainter {
   }
 
   void _drawAmountBadge(Canvas canvas, Offset center, double amount, Color color) {
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: '₹${amount.toStringAsFixed(amount % 1 == 0 ? 0 : 2)}',
-        style: const TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
+    final label = _formatCurrency(amount);
+    const maxFontSize = 9.0;
+    const minFontSize = 7.0;
+    const maxBadgeWidth = 46.0;
 
+    var fontSize = maxFontSize;
+    late TextPainter textPainter;
+
+    do {
+      textPainter = TextPainter(
+        text: TextSpan(
+          text: label,
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: fontSize,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+        maxLines: 1,
+        ellipsis: '…',
+      )..layout(maxWidth: maxBadgeWidth - 10);
+      if (textPainter.width <= maxBadgeWidth - 10 || fontSize <= minFontSize) {
+        break;
+      }
+      fontSize -= 0.5;
+    } while (fontSize >= minFontSize);
+
+    final badgeWidth = math.min(maxBadgeWidth, textPainter.width + 10);
+    final badgeHeight = textPainter.height + 6;
     final rect = RRect.fromRectAndRadius(
       Rect.fromCenter(
         center: center,
-        width: textPainter.width + 18,
-        height: textPainter.height + 10,
+        width: badgeWidth,
+        height: badgeHeight,
       ),
-      const Radius.circular(12),
+      const Radius.circular(8),
     );
 
     canvas.drawRRect(rect, Paint()..color = Colors.white);
@@ -756,7 +828,7 @@ class _DebtGraphPainter extends CustomPainter {
       Paint()
         ..color = color.withValues(alpha: 0.35)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5,
+        ..strokeWidth = 1,
     );
     textPainter.paint(
       canvas,
